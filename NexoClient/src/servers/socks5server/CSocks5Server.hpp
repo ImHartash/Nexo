@@ -10,4 +10,5 @@ private:
 	void Listen();
 
 	tcp::acceptor m_Acceptor;
+	ssl::context m_SSLContext;
 };
