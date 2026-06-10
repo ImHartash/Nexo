@@ -4,8 +4,8 @@
 
 using namespace boost::asio::experimental::awaitable_operators;
 
-CSession::CSession(tcp::socket Socket) 
-	: m_ClientSocket(std::move(Socket)), m_TargetSocket(m_ClientSocket.get_executor()),
+CSession::CSession(tcp::socket Socket, ssl::context& SSLContext)
+	: m_ClientSocket(std::move(Socket), SSLContext), m_TargetSocket(m_ClientSocket.get_executor()),
 	m_strTargetAddress(), m_nTargetPort(0), m_Header(0) { }
 
 void CSession::Start() {
@@ -18,6 +18,9 @@ void CSession::Start() {
 
 awaitable<void> CSession::HandleSession() {
 	try {
+		// TLS Handshake
+		co_await m_ClientSocket.async_handshake(ssl::stream_base::server, use_awaitable);
+
 		// Reading and checking header
 		co_await net::async_read(m_ClientSocket,
 			net::buffer(&m_Header, sizeof(m_Header)), use_awaitable);
@@ -101,6 +104,7 @@ awaitable<void> CSession::RelayServerToClient() {
 
 void CSession::CloseSockets() {
 	boost::system::error_code Error;
-	m_ClientSocket.close(Error);
+	m_ClientSocket.shutdown(Error);
+	m_ClientSocket.lowest_layer().close(Error);
 	m_TargetSocket.close(Error);
 }

@@ -1,12 +1,13 @@
 #include "CSocks5Session.hpp"
 #include <boost/asio/experimental/awaitable_operators.hpp>
+#include <openssl/ssl.h>
 #include "logger/CLogger.hpp"
 #include "headers/nexo.hpp"
 
 using namespace boost::asio::experimental::awaitable_operators;
 
-CSocks5Session::CSocks5Session(tcp::socket ClientSocket) 
-	: m_ClientSocket(std::move(ClientSocket)), m_UpstreamSocket(m_ClientSocket.get_executor()),
+CSocks5Session::CSocks5Session(tcp::socket ClientSocket, ssl::context& SSLContext) 
+	: m_ClientSocket(std::move(ClientSocket)), m_UpstreamSocket(m_ClientSocket.get_executor(), SSLContext),
 	m_strHostName(), m_nHostPort(0) {
 	LOG_INFO("Session opened from %s", m_ClientSocket.remote_endpoint().address().to_string().c_str());
 }
@@ -16,11 +17,14 @@ CSocks5Session::~CSocks5Session() {
 }
 
 void CSocks5Session::Start() {
-	auto Self = shared_from_this();
+	/*auto Self = shared_from_this();
 	co_spawn(m_ClientSocket.get_executor(),
 		[this, Self]() -> awaitable<void> {
 			co_await HandleSession();
-		}, detached);
+		}, detached);*/
+	co_spawn(m_ClientSocket.get_executor(), [Self = shared_from_this()]() -> awaitable<void> {
+		co_await Self->HandleSession();
+	}, detached);
 }
 
 awaitable<void> CSocks5Session::HandleSession() {
@@ -92,8 +96,14 @@ awaitable<void> CSocks5Session::ReadSocksRequest() {
 awaitable<void> CSocks5Session::ConnectToUpstream() {
 	tcp::resolver Resolver(m_ClientSocket.get_executor());
 	auto Endpoints = co_await Resolver.async_resolve("127.0.0.1", "7777", use_awaitable);
-	co_await net::async_connect(m_UpstreamSocket, Endpoints, use_awaitable);
+	co_await net::async_connect(m_UpstreamSocket.lowest_layer(), Endpoints, use_awaitable);
 	LOG_INFO("Client connected to Nexo server 127.0.0.1:7777");
+
+	if (!SSL_set_tlsext_host_name(m_UpstreamSocket.native_handle(), "hqhacks.xyz")) {
+		throw std::runtime_error("failed to set SNI to TLS config.");
+	}
+
+	co_await m_UpstreamSocket.async_handshake(ssl::stream_base::client, use_awaitable);
 
 	NexoProtocolHeader_t Header;
 	Header.nVersion = 0x01;
@@ -163,12 +173,13 @@ awaitable<void> CSocks5Session::RelayUpstreamToClient() {
 			LOG_WARN("Proxy2Client error: %s", e.what());
 		}
 	}
-
+		
 	CloseSockets();
 }
 
 void CSocks5Session::CloseSockets() {
 	boost::system::error_code Error;
-	m_UpstreamSocket.close(Error);
+	m_UpstreamSocket.shutdown(Error);
+	m_UpstreamSocket.lowest_layer().close(Error);
 	m_ClientSocket.close(Error);
 }
