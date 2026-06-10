@@ -155,6 +155,12 @@
     <ClInclude Include="src\servers\socks5server\CSocks5Server.hpp" />
     <ClInclude Include="src\sessions\socks5session\CSocks5Session.hpp" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="config\client.toml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="CMakeLists.txt" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
