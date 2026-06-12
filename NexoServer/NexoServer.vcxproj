@@ -117,7 +117,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions);BOOST_ASIO_DISABLE_WARNINGS;_WIN32_WINNT=0x0A00</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp23</LanguageStandard>
-      <AdditionalIncludeDirectories>C:\vs_include\json\include;C:\vs_include\boost\boost-1.90.0;C:\Program Files\OpenSSL-Win64\include;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\vs_include\tomlplusplus\include;C:\vs_include\boost\boost-1.90.0;C:\Program Files\OpenSSL-Win64\include;</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -134,7 +134,7 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions);BOOST_ASIO_DISABLE_WARNINGS;_WIN32_WINNT=0x0A00</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp23</LanguageStandard>
-      <AdditionalIncludeDirectories>C:\vs_include\json\include;C:\vs_include\boost\boost-1.90.0;C:\Program Files\OpenSSL-Win64\include;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\vs_include\tomlplusplus\include;C:\vs_include\boost\boost-1.90.0;C:\Program Files\OpenSSL-Win64\include;</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -143,12 +143,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\config\CConfigManager.cpp" />
     <ClCompile Include="src\logger\CLogger.cpp" />
     <ClCompile Include="src\server.cpp" />
     <ClCompile Include="src\server\CServer.cpp" />
     <ClCompile Include="src\session\CSession.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\config\CConfigManager.hpp" />
+    <ClInclude Include="src\config\ServerConfiguration.hpp" />
     <ClInclude Include="src\headers\nexo.hpp" />
     <ClInclude Include="src\logger\CLogger.hpp" />
     <ClInclude Include="src\server\CServer.hpp" />

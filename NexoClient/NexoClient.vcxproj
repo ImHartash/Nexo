@@ -149,6 +149,8 @@
     <ClCompile Include="src\sessions\socks5session\CSocks5Session.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\config\CConfigManager.hpp" />
+    <ClInclude Include="src\config\ClientConfiguration.hpp" />
     <ClInclude Include="src\headers\nexo.hpp" />
     <ClInclude Include="src\headers\socks5.hpp" />
     <ClInclude Include="src\logger\CLogger.hpp" />

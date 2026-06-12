@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <string>
+#include <vector>
 
 namespace Config {
 	inline struct ServerConfig_t {
@@ -19,4 +20,13 @@ namespace Config {
 		int nMaxConnections = 100;
 		int nTimeoutSeconds = 60;
 	} Limits;
+
+	// Users
+	struct UserConfig_t {
+		std::string strUsename = "";
+		std::string strUUID = "";
+		bool bEnabled = false;
+	};
+
+	inline std::vector<UserConfig_t> Users;
 }
