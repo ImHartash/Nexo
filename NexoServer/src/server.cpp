@@ -25,12 +25,10 @@ int main(int argc, char* argv[]) {
 			return 1;
 		}
 
-		uint16_t nServerPort = Config::Server.nServerPort;
-
 		boost::asio::io_context IOContext;
-		CServer Server(IOContext, nServerPort);
+		CServer Server(IOContext, Config::Server.nServerPort);
 		Server.Listen();
-		LOG_INFO("Nexo server listening on port %u", nServerPort);
+		LOG_INFO("Nexo server listening on port %u", Config::Server.nServerPort);
 		IOContext.run();
 	}
 	catch (std::exception& e) {

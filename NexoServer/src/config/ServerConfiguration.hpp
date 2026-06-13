@@ -21,6 +21,12 @@ namespace Config {
 		int nTimeoutSeconds = 60;
 	} Limits;
 
+	// WIP
+	inline struct LogConfig_t {
+		std::string strLogLevel = "info";
+		std::string strFilePath = "logs/client.log";
+	} Log;
+
 	// Users
 	struct UserConfig_t {
 		std::string strUsename = "";
