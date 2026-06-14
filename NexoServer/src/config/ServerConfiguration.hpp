@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+#include <array>
 
 namespace Config {
 	inline struct ServerConfig_t {
@@ -32,6 +33,7 @@ namespace Config {
 		std::string strUsename = "";
 		std::string strUUID = "";
 		bool bEnabled = false;
+		std::array<uint8_t, 16> ByteUUID{};
 	};
 
 	inline std::vector<UserConfig_t> Users;

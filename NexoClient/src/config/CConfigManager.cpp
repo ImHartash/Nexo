@@ -1,8 +1,9 @@
 #include "CConfigManager.hpp"
-#include "ClientConfiguration.hpp"
-#include "logger/CLogger.hpp"
 #include <filesystem>
 #include <toml++/toml.hpp>
+#include "ClientConfiguration.hpp"
+#include "logger/CLogger.hpp"
+#include "utils/utils.hpp"
 
 namespace fs = std::filesystem;
 
@@ -35,7 +36,9 @@ bool CConfigManager::LoadFromFile() {
 				Config::Server.nPort = *server_port;
 			}
 			if (auto uuid = server["uuid"].value<std::string>()) {
-				Config::Server.strUUID = *uuid;
+				if (!Utils::ParseUUID(*uuid, Config::Server.UUID)) {
+					Config::Server.UUID = std::array<uint8_t, 16>();
+				}
 			}
 		}
 

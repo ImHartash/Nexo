@@ -8,6 +8,7 @@ target_include_directories(NexoClient PRIVATE
     src
     src/headers
     src/logger
+    src/utils
     src/servers/socks5server
     src/sessions/socks5session
 )

@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <string>
+#include <array>
 
 namespace Config {
 	inline struct LocalConfig_t {
@@ -11,7 +12,7 @@ namespace Config {
 	inline struct ServerConfig_t {
 		std::string strServerHost = "example.com";
 		uint16_t nPort = 443;
-		std::string strUUID = "550e8400-e29b-41d4-a716-446655440000";
+		std::array<uint8_t, 16> UUID{};
 	} Server;
 
 	inline struct TLSConfig_t {

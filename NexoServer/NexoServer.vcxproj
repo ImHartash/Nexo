@@ -148,6 +148,7 @@
     <ClCompile Include="src\server.cpp" />
     <ClCompile Include="src\server\CServer.cpp" />
     <ClCompile Include="src\session\CSession.cpp" />
+    <ClCompile Include="src\utils\utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\config\CConfigManager.hpp" />
@@ -156,6 +157,7 @@
     <ClInclude Include="src\logger\CLogger.hpp" />
     <ClInclude Include="src\server\CServer.hpp" />
     <ClInclude Include="src\session\CSession.hpp" />
+    <ClInclude Include="src\utils\utils.hpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="CMakeLists.txt" />

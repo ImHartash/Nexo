@@ -124,6 +124,7 @@ awaitable<void> CSocks5Session::ConnectToUpstream() {
 	co_await m_UpstreamSocket.async_handshake(ssl::stream_base::client, use_awaitable);
 
 	NexoProtocolHeader_t Header;
+	std::memcpy(Header.nUUID, Config::Server.UUID.data(), 16);
 	Header.nVersion = 0x01;
 	Header.nCommand = 0x01;
 	Header.nPort = htons(m_nHostPort);

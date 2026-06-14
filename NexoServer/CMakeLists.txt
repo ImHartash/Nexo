@@ -10,6 +10,7 @@ target_include_directories(NexoServer PRIVATE
     src/logger
     src/server
     src/session
+    src/utils
 )
 
 target_link_libraries(NexoServer PRIVATE

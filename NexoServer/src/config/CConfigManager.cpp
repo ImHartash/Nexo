@@ -1,6 +1,7 @@
 #include "CConfigManager.hpp"
 #include "ServerConfiguration.hpp"
 #include "logger/CLogger.hpp"
+#include "utils/utils.hpp"
 #include <filesystem>
 #include <toml++/toml.hpp>
 
@@ -62,6 +63,10 @@ bool CConfigManager::LoadFromFile() {
 				User.strUsename = UserTable->get("name")->value_or(std::string(""));
 				User.strUUID = UserTable->get("uuid")->value_or(std::string(""));
 				User.bEnabled = UserTable->get("enabled")->value_or(true);
+
+				if (!User.strUUID.empty()) {
+					if (!Utils::ParseUUID(User.strUUID, User.ByteUUID)) User.ByteUUID = std::array<uint8_t, 16>();
+				}
 
 				Config::Users.push_back(User);
 			}

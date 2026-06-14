@@ -148,6 +148,7 @@
     <ClCompile Include="src\client.cpp" />
     <ClCompile Include="src\servers\socks5server\CSocks5Server.cpp" />
     <ClCompile Include="src\sessions\socks5session\CSocks5Session.cpp" />
+    <ClCompile Include="src\utils\utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\config\CConfigManager.hpp" />
@@ -157,6 +158,7 @@
     <ClInclude Include="src\logger\CLogger.hpp" />
     <ClInclude Include="src\servers\socks5server\CSocks5Server.hpp" />
     <ClInclude Include="src\sessions\socks5session\CSocks5Session.hpp" />
+    <ClInclude Include="src\utils\utils.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="config\client.toml" />
