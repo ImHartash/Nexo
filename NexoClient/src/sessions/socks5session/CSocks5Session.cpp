@@ -93,12 +93,29 @@ awaitable<void> CSocks5Session::ConnectToUpstream() {
 	tcp::resolver Resolver(m_ClientSocket.get_executor());
 	auto Endpoints = co_await Resolver.async_resolve(Config::Server.strServerHost, 
 		std::to_string(Config::Server.nPort), use_awaitable);
-	bool bConnected = co_await this->ConnectWithTimeout(
-		m_UpstreamSocket.next_layer(), Endpoints, Config::Connection.nTimeoutSeconds);
-	if (bConnected) {
-		LOG_INFO("Successfully connected to the server.");
+
+	bool bConnected = false;
+
+	for (int nAttempt = 1; nAttempt <= Config::Connection.nRetryAttempts; nAttempt++) {
+		LOG_INFO("Trying to connect to the server. Attempt %d/%d", nAttempt, Config::Connection.nRetryAttempts);
+		bConnected = co_await this->ConnectWithTimeout(
+			m_UpstreamSocket.next_layer(), Endpoints, Config::Connection.nTimeoutSeconds);
+		if (bConnected) {
+			LOG_INFO("Successfully connected to the server.");
+			break;
+		}
+		
+		LOG_INFO("Retrying in %dms", Config::Connection.nRetryDelayMS);
+
+		net::steady_timer RetryTimer(m_ClientSocket.get_executor());
+		RetryTimer.expires_after(std::chrono::milliseconds(Config::Connection.nRetryDelayMS));
+		co_await RetryTimer.async_wait(use_awaitable);
 	}
-	else { co_return; }
+
+	if (!bConnected) {
+		LOG_WARN("Failed to connect to the server after all attempts.");
+		co_return;
+	}
 
 	if (!SSL_set_tlsext_host_name(m_UpstreamSocket.native_handle(), Config::TLS.strServerNameIndicator.c_str())) {
 		throw std::runtime_error("failed to set SNI to TLS config.");
