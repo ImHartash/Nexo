@@ -29,7 +29,9 @@ private:
 
 	void CloseSockets();
 
-	//ssl::context& m_SSLContext;
+	// Help funcs
+	awaitable<bool> ConnectWithTimeout(tcp::socket& Socket, const tcp::resolver::results_type& Endpoints, int nTimeoutSeconds);
+
 	tcp::socket m_ClientSocket;
 	ssl::stream<tcp::socket> m_UpstreamSocket;
 	
