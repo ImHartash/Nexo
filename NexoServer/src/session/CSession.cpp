@@ -5,9 +5,20 @@
 
 using namespace boost::asio::experimental::awaitable_operators;
 
-CSession::CSession(tcp::socket Socket, ssl::context& SSLContext)
+CSession::CSession(tcp::socket Socket, ssl::context& SSLContext, std::atomic<int>& nActiveConnections)
 	: m_ClientSocket(std::move(Socket), SSLContext), m_TargetSocket(m_ClientSocket.get_executor()),
-	m_strTargetAddress(), m_nTargetPort(0), m_Header(0) { }
+	m_strTargetAddress(), m_nTargetPort(0), m_Header(0), m_nActiveConnections(nActiveConnections),
+	m_TimeoutTimer(m_ClientSocket.get_executor()) { }
+
+CSession::~CSession() {
+	boost::system::error_code Error;
+	m_ClientSocket.shutdown(Error);
+	m_ClientSocket.lowest_layer().close(Error);
+	m_TargetSocket.close(Error);
+	m_nActiveConnections--;
+
+	LOG_INFO("Session closed successfully.");
+}
 
 void CSession::Start() {
 	auto Self = shared_from_this();
@@ -55,8 +66,8 @@ awaitable<void> CSession::HandleSession() {
 		LOG_INFO("Connected to target server %s:%d", m_strTargetAddress.c_str(), m_nTargetPort);
 
 		// Starting translation
-		co_await (RelayClientToServer() || RelayServerToClient());
-		LOG_INFO("Relay finished, closing session.");
+		co_await (RelayClientToServer() || RelayServerToClient() || WaitForTimeout());
+		LOG_INFO("Relay finished, closing session...");
 	}
 	catch (std::exception& e) {
 		LOG_WARN("Session error: %s", e.what());
@@ -69,6 +80,7 @@ awaitable<void> CSession::RelayClientToServer() {
 		for (;;) {
 			uint64_t nBufferSize = co_await m_ClientSocket.async_read_some(
 				net::buffer(arrBuffer), use_awaitable);
+			ResetTimer();
 			co_await net::async_write(m_TargetSocket,
 				net::buffer(arrBuffer.data(), nBufferSize), use_awaitable);
 		}
@@ -82,7 +94,7 @@ awaitable<void> CSession::RelayClientToServer() {
 			e.code().value() != 1236) {
 			LOG_WARN("Client2Server relay error: %s", e.what());
 		}
-		CloseSockets();
+		/*CloseSockets();*/
 	}
 }
 
@@ -105,7 +117,7 @@ awaitable<void> CSession::RelayServerToClient() {
 			e.code().value() != 1236) {
 			LOG_WARN("Server2Client relay error: %s", e.what());
 		}
-		CloseSockets();
+		/*CloseSockets();*/
 	}
 }
 
@@ -114,6 +126,20 @@ void CSession::CloseSockets() {
 	m_ClientSocket.shutdown(Error);
 	m_ClientSocket.lowest_layer().close(Error);
 	m_TargetSocket.close(Error);
+	m_nActiveConnections--;
+
+	LOG_INFO("Session closed successfully.");
+}
+
+void CSession::ResetTimer() {
+	m_TimeoutTimer.expires_after(std::chrono::seconds(Config::Limits.nTimeoutSeconds));
+}
+
+awaitable<void> CSession::WaitForTimeout() {
+	m_TimeoutTimer.expires_after(std::chrono::seconds(Config::Limits.nTimeoutSeconds));
+	co_await m_TimeoutTimer.async_wait(use_awaitable);
+	LOG_INFO("Session timed out.");
+	/*CloseSockets();*/
 }
 
 bool CSession::IsValidUUID(const uint8_t* pReceivedUUID) {
