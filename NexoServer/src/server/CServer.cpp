@@ -1,10 +1,11 @@
 #include "CServer.hpp"
 #include "session/CSession.hpp"
+#include "config/ServerConfiguration.hpp"
 
 CServer::CServer(boost::asio::io_context& IOContext, uint16_t nPort) 
 	: m_Acceptor(IOContext, tcp::endpoint(tcp::v4(), nPort)), m_SSLContext(ssl::context::tls_server) {
-	m_SSLContext.use_certificate_chain_file("server.crt");
-	m_SSLContext.use_private_key_file("server.key", ssl::context::pem);
+	m_SSLContext.use_certificate_chain_file(Config::Server.strCertFilePath);
+	m_SSLContext.use_private_key_file(Config::Server.strKeyFilePath, ssl::context::pem);
 }
 
 void CServer::Listen() {

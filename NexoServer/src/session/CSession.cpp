@@ -1,6 +1,7 @@
 #include "CSession.hpp"
 #include <boost/asio/experimental/awaitable_operators.hpp>
 #include "logger/CLogger.hpp"
+#include "config/ServerConfiguration.hpp"
 
 using namespace boost::asio::experimental::awaitable_operators;
 
@@ -24,6 +25,12 @@ awaitable<void> CSession::HandleSession() {
 		// Reading and checking header
 		co_await net::async_read(m_ClientSocket,
 			net::buffer(&m_Header, sizeof(m_Header)), use_awaitable);
+		
+		if (!IsValidUUID(m_Header.nUUID)) {
+			LOG_INFO("Unauthorized connection. Reseting...");
+			co_return;
+		}
+
 		if (m_Header.nVersion != 0x01 || m_Header.nCommand != 0x01) {
 			LOG_WARN("Invalid Nexo header (ver=%d, cmd=%d)", m_Header.nVersion, m_Header.nCommand);
 			co_return;
@@ -107,4 +114,15 @@ void CSession::CloseSockets() {
 	m_ClientSocket.shutdown(Error);
 	m_ClientSocket.lowest_layer().close(Error);
 	m_TargetSocket.close(Error);
+}
+
+bool CSession::IsValidUUID(const uint8_t* pReceivedUUID) {
+	for (auto& User : Config::Users) {
+		if (!User.bEnabled) continue;
+
+		if (std::memcmp(pReceivedUUID, User.ByteUUID.data(), 16) == 0)
+			return true;
+	}
+
+	return false;
 }

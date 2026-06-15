@@ -1,10 +1,13 @@
+cmake_policy(SET CMP0167 NEW)
+cmake_policy(SET CMP0144 NEW)
+
 cmake_minimum_required(VERSION 3.20)
 project(Nexo CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(BOOST_ROOT "C:/vs_include/boost/boost-1.90.0")
+set(Boost_ROOT "C:/vs_include/boost/boost-1.90.0")
 set(OPENSSL_ROOT_DIR "C:/Program Files/OpenSSL-Win64")
 set(Boost_USE_STATIC_LIBS ON)
 

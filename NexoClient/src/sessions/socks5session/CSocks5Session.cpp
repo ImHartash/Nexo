@@ -2,6 +2,7 @@
 #include <boost/asio/experimental/awaitable_operators.hpp>
 #include <openssl/ssl.h>
 #include "logger/CLogger.hpp"
+#include "config/ClientConfiguration.hpp"
 #include "headers/nexo.hpp"
 
 using namespace boost::asio::experimental::awaitable_operators;
@@ -17,13 +18,8 @@ CSocks5Session::~CSocks5Session() {
 }
 
 void CSocks5Session::Start() {
-	/*auto Self = shared_from_this();
-	co_spawn(m_ClientSocket.get_executor(),
-		[this, Self]() -> awaitable<void> {
-			co_await HandleSession();
-		}, detached);*/
-	co_spawn(m_ClientSocket.get_executor(), [Self = shared_from_this()]() -> awaitable<void> {
-		co_await Self->HandleSession();
+	co_spawn(m_ClientSocket.get_executor(), [self = shared_from_this()]() -> awaitable<void> {
+		co_await self->HandleSession();
 	}, detached);
 }
 
@@ -95,17 +91,42 @@ awaitable<void> CSocks5Session::ReadSocksRequest() {
 
 awaitable<void> CSocks5Session::ConnectToUpstream() {
 	tcp::resolver Resolver(m_ClientSocket.get_executor());
-	auto Endpoints = co_await Resolver.async_resolve("127.0.0.1", "7777", use_awaitable);
-	co_await net::async_connect(m_UpstreamSocket.lowest_layer(), Endpoints, use_awaitable);
-	LOG_INFO("Client connected to Nexo server 127.0.0.1:7777");
+	auto Endpoints = co_await Resolver.async_resolve(Config::Server.strServerHost, 
+		std::to_string(Config::Server.nPort), use_awaitable);
 
-	if (!SSL_set_tlsext_host_name(m_UpstreamSocket.native_handle(), "hqhacks.xyz")) {
+	bool bConnected = false;
+
+	for (int nAttempt = 1; nAttempt <= Config::Connection.nRetryAttempts; nAttempt++) {
+		LOG_INFO("Trying to connect to the server. Attempt %d/%d", nAttempt, Config::Connection.nRetryAttempts);
+		bConnected = co_await this->ConnectWithTimeout(
+			m_UpstreamSocket.next_layer(), Endpoints, Config::Connection.nTimeoutSeconds);
+		if (bConnected) {
+			LOG_INFO("Successfully connected to the server.");
+			break;
+		}
+		
+		if (nAttempt < Config::Connection.nRetryAttempts) {
+			LOG_INFO("Retrying in %dms", Config::Connection.nRetryDelayMS);
+
+			net::steady_timer RetryTimer(m_ClientSocket.get_executor());
+			RetryTimer.expires_after(std::chrono::milliseconds(Config::Connection.nRetryDelayMS));
+			co_await RetryTimer.async_wait(use_awaitable);
+		}
+	}
+
+	if (!bConnected) {
+		LOG_WARN("Failed to connect to the server after all attempts.");
+		co_return;
+	}
+
+	if (!SSL_set_tlsext_host_name(m_UpstreamSocket.native_handle(), Config::TLS.strServerNameIndicator.c_str())) {
 		throw std::runtime_error("failed to set SNI to TLS config.");
 	}
 
 	co_await m_UpstreamSocket.async_handshake(ssl::stream_base::client, use_awaitable);
 
 	NexoProtocolHeader_t Header;
+	std::memcpy(Header.nUUID, Config::Server.UUID.data(), 16);
 	Header.nVersion = 0x01;
 	Header.nCommand = 0x01;
 	Header.nPort = htons(m_nHostPort);
@@ -182,4 +203,26 @@ void CSocks5Session::CloseSockets() {
 	m_UpstreamSocket.shutdown(Error);
 	m_UpstreamSocket.lowest_layer().close(Error);
 	m_ClientSocket.close(Error);
+}
+
+awaitable<bool> CSocks5Session::ConnectWithTimeout(tcp::socket& Socket, const tcp::resolver::results_type& Endpoints, int nTimeoutSeconds) {
+	net::steady_timer Timer(co_await net::this_coro::executor);
+	Timer.expires_after(std::chrono::seconds(nTimeoutSeconds));
+
+	try {
+		auto Result = co_await(
+			net::async_connect(Socket, Endpoints, use_awaitable) || Timer.async_wait(use_awaitable));
+
+		if (Result.index() == 0) {
+			Timer.cancel();
+			co_return true;
+		}
+		else {
+			LOG_WARN("Failed to connect to the server: timeout.");
+			co_return false;
+		}
+	}
+	catch (std::exception&) {
+		co_return false;
+	}
 }

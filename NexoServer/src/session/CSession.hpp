@@ -25,6 +25,9 @@ private:
 
 	void CloseSockets();
 
+	// Utils for session
+	bool IsValidUUID(const uint8_t* pReceivedUUID);
+
 	ssl::stream<tcp::socket> m_ClientSocket;
 	tcp::socket m_TargetSocket;
 	NexoProtocolHeader_t m_Header;
