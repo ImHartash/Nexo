@@ -30,7 +30,7 @@ namespace Config {
 
 	// Users
 	struct UserConfig_t {
-		std::string strUsename = "";
+		std::string strUsername = "";
 		std::string strUUID = "";
 		bool bEnabled = false;
 		std::array<uint8_t, 16> ByteUUID{};

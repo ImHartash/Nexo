@@ -46,7 +46,7 @@ bool CConfigManager::LoadFromFile() {
 			if (auto verify_cert = tls["verify_cert"].value<bool>()) {
 				Config::TLS.bVerifyCert = *verify_cert;
 			}
-			if (auto tls_sni = tls["tls_sni"].value<bool>()) {
+			if (auto tls_sni = tls["tls_sni"].value<std::string>()) {
 				Config::TLS.strServerNameIndicator = *tls_sni;
 			}
 		}

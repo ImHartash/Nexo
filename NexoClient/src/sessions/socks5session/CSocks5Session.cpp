@@ -105,11 +105,13 @@ awaitable<void> CSocks5Session::ConnectToUpstream() {
 			break;
 		}
 		
-		LOG_INFO("Retrying in %dms", Config::Connection.nRetryDelayMS);
+		if (nAttempt < Config::Connection.nRetryAttempts) {
+			LOG_INFO("Retrying in %dms", Config::Connection.nRetryDelayMS);
 
-		net::steady_timer RetryTimer(m_ClientSocket.get_executor());
-		RetryTimer.expires_after(std::chrono::milliseconds(Config::Connection.nRetryDelayMS));
-		co_await RetryTimer.async_wait(use_awaitable);
+			net::steady_timer RetryTimer(m_ClientSocket.get_executor());
+			RetryTimer.expires_after(std::chrono::milliseconds(Config::Connection.nRetryDelayMS));
+			co_await RetryTimer.async_wait(use_awaitable);
+		}
 	}
 
 	if (!bConnected) {

@@ -26,7 +26,7 @@ namespace Config {
 		std::string strFilePath = "logs/nexo_client.log";
 	} Log;
 
-	inline struct ConnectionLog_t {
+	inline struct ConnectionConfig_t {
 		int nTimeoutSeconds = 10;
 		int nRetryAttempts = 3;
 		int nRetryDelayMS = 1000;

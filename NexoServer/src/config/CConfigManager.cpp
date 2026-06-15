@@ -60,12 +60,15 @@ bool CConfigManager::LoadFromFile() {
 				if (!UserTable) continue;
 
 				Config::UserConfig_t User;
-				User.strUsename = UserTable->get("name")->value_or(std::string(""));
+				User.strUsername = UserTable->get("name")->value_or(std::string(""));
 				User.strUUID = UserTable->get("uuid")->value_or(std::string(""));
 				User.bEnabled = UserTable->get("enabled")->value_or(true);
 
 				if (!User.strUUID.empty()) {
-					if (!Utils::ParseUUID(User.strUUID, User.ByteUUID)) User.ByteUUID = std::array<uint8_t, 16>();
+					if (!Utils::ParseUUID(User.strUUID, User.ByteUUID)) {
+						LOG_WARN("Skipping user '%s': invalid UUID", User.strUsername.c_str());
+						continue;
+					}
 				}
 
 				Config::Users.push_back(User);
