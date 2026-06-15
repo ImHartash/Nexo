@@ -44,11 +44,20 @@ bool CConfigManager::LoadFromFile() {
 		}
 
 		if (auto limits = TomlTable["limits"]) {
-			if (auto maxConn = limits["max_connections"].value<int>()) {
-				Config::Limits.nMaxConnections = *maxConn;
+			if (auto max_connections = limits["max_connections"].value<int>()) {
+				Config::Limits.nMaxConnections = *max_connections;
 			}
-			if (auto timeout = limits["timeout_seconds"].value<int>()) {
-				Config::Limits.nTimeoutSeconds = *timeout;
+			if (auto timeout_seconds = limits["timeout_seconds"].value<int>()) {
+				Config::Limits.nTimeoutSeconds = *timeout_seconds;
+			}
+		}
+
+		if (auto log = TomlTable["log"]) {
+			if (auto level = log["level"].value<std::string>()) {
+				Config::Log.strLogLevel = *level;
+			}
+			if (auto file = log["file"].value<std::string>()) {
+				Config::Log.strFilePath = *file;
 			}
 		}
 
@@ -111,6 +120,10 @@ port    = 443
 [limits]
 max_connections = 100
 timeout_seconds = 60
+
+[log]
+log_level = "info"
+file = "logs/nexo.log"
 
 # Add users below. Each [[users]] block is one user.
 [[users]]

@@ -25,7 +25,7 @@ namespace Config {
 	// WIP
 	inline struct LogConfig_t {
 		std::string strLogLevel = "info";
-		std::string strFilePath = "logs/client.log";
+		std::string strFilePath = "logs/latest.log";
 	} Log;
 
 	// Users
