@@ -10,19 +10,19 @@ int main(int argc, char* argv[]) {
 		std::locale::global(std::locale("C"));
 		CConfigManager Config = { "config/server_configuration.toml" };
 
-		if (!g_Logger.Initialize()) {
-			std::cout << "Failed to initialize log tools." << std::endl;
-		}
-
 		if (!Config.IsFileExists()) {
 			Config.CreateDefault();
-			LOG_INFO("Configuration file created. Please, restart Nexo to continue...");
+			std::cout << "Configuration file created. Please, restart Nexo to continue...\n";
 			return 0;
 		}
 
 		if (!Config.LoadFromFile()) {
-			LOG_ERROR("Failed to load configuration from file.");
+			std::cout << "Failed to load configuration from file.\n";
 			return 1;
+		}
+
+		if (!g_Logger.Initialize(Config::Log.strFilePath, Config::Log.strLogLevel)) {
+			std::cout << "Failed to initialize log tools.\n";
 		}
 
 		boost::asio::io_context IOContext;

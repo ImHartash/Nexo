@@ -1,0 +1,24 @@
+# Nexo Server Configuration
+[server]
+port = 443
+cert_file = "certs/server.crt"
+key_file  = "certs/server.key"
+
+[fallback]
+enabled = false
+host    = "example.com"
+port    = 443
+
+[limits]
+max_connections = 100
+timeout_seconds = 60
+
+[log]
+log_level = "info"
+file = "logs/nexo.log"
+
+# Add users below. Each [[users]] block is one user.
+[[users]]
+name    = "test_user"
+uuid    = "7f3d9200-a14c-52e8-b923-115566770011"
+enabled = true

@@ -1,18 +1,28 @@
-cmake_policy(SET CMP0167 NEW)
-cmake_policy(SET CMP0144 NEW)
+cmake_minimum_required(VERSION 3.24)
 
-cmake_minimum_required(VERSION 3.20)
-project(Nexo CXX)
+project(Nexo LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
-set(Boost_ROOT "C:/vs_include/boost/boost-1.90.0")
-set(OPENSSL_ROOT_DIR "C:/Program Files/OpenSSL-Win64")
-set(Boost_USE_STATIC_LIBS ON)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG
+    ${CMAKE_SOURCE_DIR}/bin/debug
+)
 
-find_package(Boost REQUIRED COMPONENTS system)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE
+    ${CMAKE_SOURCE_DIR}/bin/release
+)
+
+include(FetchContent)
+
 find_package(OpenSSL REQUIRED)
+find_package(Boost REQUIRED)
+find_package(tomlplusplus CONFIG REQUIRED)
 
-add_subdirectory(server)
-add_subdirectory(client)
+#
+# Subprojects
+#
+
+add_subdirectory(NexoServer)
+add_subdirectory(NexoClient)

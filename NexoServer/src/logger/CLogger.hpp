@@ -1,6 +1,8 @@
 #pragma once
 #include <string>
 #include <cstdio>
+#include <fstream>
+#include <mutex>
 
 constexpr const char* COLOR_RESET = "\033[0m";
 constexpr const char* COLOR_RED = "\033[31m";
@@ -13,29 +15,32 @@ constexpr const char* COLOR_LIGHT_YELLOW = "\033[93m";
 constexpr const char* COLOR_LIGHT_CYAN = "\033[96m";
 constexpr const char* COLOR_BOLD = "\033[1m";
 
+enum class ELogLevel {
+	Info = 0,
+	Warn = 1,
+	Error = 2,
+};
+
 // 23:29:40 INFO - Message
 class CLogger {
 public:
 	CLogger();
 	~CLogger();
 
-	bool Initialize();
+	bool Initialize(const std::string& strFilePath, const std::string& strLevel);
 	std::string GetTimeStamp();
 
-	void Log(const char* szColor, const char* szLogLevel, const char* szFormat, ...);
+	void Log(int nLogLevel, const char* szColor, const char* szLogLevel, const char* szFormat, ...);
 
 private:
 	bool m_bInitialized;
+	std::ofstream m_FileStream;
+	std::mutex m_Mutex;
+	int m_nMinLogLevel;
 };
 
 extern CLogger g_Logger;
 
-#ifdef _DEBUG
-#define LOG_INFO(fmt, ...)  g_Logger.Log(COLOR_LIGHT_CYAN, "INFO", fmt, __VA_ARGS__)
-#define LOG_WARN(fmt, ...)  g_Logger.Log(COLOR_LIGHT_YELLOW, "WARN", fmt, __VA_ARGS__)
-#define LOG_ERROR(fmt, ...) g_Logger.Log(COLOR_LIGHT_RED, "ERROR", fmt, __VA_ARGS__)
-#else
-#define LOG_INFO(fmt, ...)  ((void)0)
-#define LOG_WARN(fmt, ...)  ((void)0)
-#define LOG_ERROR(fmt, ...) ((void)0)
-#endif
+#define LOG_INFO(fmt, ...)  g_Logger.Log((int)ELogLevel::Info, COLOR_LIGHT_CYAN, "INFO", fmt, ##__VA_ARGS__)
+#define LOG_WARN(fmt, ...)  g_Logger.Log((int)ELogLevel::Warn, COLOR_LIGHT_YELLOW, "WARN", fmt, ##__VA_ARGS__)
+#define LOG_ERROR(fmt, ...) g_Logger.Log((int)ELogLevel::Error, COLOR_LIGHT_RED, "ERROR", fmt, ##__VA_ARGS__)

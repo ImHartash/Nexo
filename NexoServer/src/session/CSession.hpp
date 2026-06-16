@@ -14,7 +14,8 @@ using net::use_awaitable;
 
 class CSession : public std::enable_shared_from_this<CSession> {
 public:
-	CSession(tcp::socket Socket, ssl::context& SSLContext);
+	CSession(tcp::socket Socket, ssl::context& SSLContext, std::atomic<int>& nActiveConnections);
+	~CSession();
 	void Start();
 
 private:
@@ -25,6 +26,9 @@ private:
 
 	void CloseSockets();
 
+	void ResetTimer();
+	awaitable<void> WaitForTimeout();
+
 	// Utils for session
 	bool IsValidUUID(const uint8_t* pReceivedUUID);
 
@@ -33,4 +37,7 @@ private:
 	NexoProtocolHeader_t m_Header;
 	std::string m_strTargetAddress;
 	uint16_t m_nTargetPort;
+
+	std::atomic<int>& m_nActiveConnections;
+	net::steady_timer m_TimeoutTimer;
 };

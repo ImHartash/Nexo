@@ -1,0 +1,22 @@
+# Nexo Client Configuration
+[local]
+host = "127.0.0.1"
+port = 6578
+
+[server]
+server_host = "your-domain-or-ip.com"
+server_port = 443
+uuid = "550e8400-e29b-41d4-a716-446655440000"
+
+[tls]
+verify_cert = false
+tls_sni = "example.com"
+
+[connection]
+timeout_seconds = 10
+retry_attempts = 3
+retry_delay_ms = 1000
+
+[log]
+level = "info"
+file = "logs/nexo_client.log"

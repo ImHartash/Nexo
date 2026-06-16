@@ -10,27 +10,27 @@ int main() {
 		std::locale::global(std::locale("C"));
 		CConfigManager Config = { "config/client_configuration.toml" };
 
-		if (!g_Logger.Initialize()) {
-			std::cout << "Failed to initialize log tools." << std::endl;
-		}
-
 		if (!Config.IsFileExists()) {
 			Config.CreateDefault();
-			LOG_INFO("Configuration file created. Please, restart Nexo to continue...");
+			std::cout << "Configuration file created. Please, restart Nexo to continue...\n";
 			return 0;
 		}
 
 		if (!Config.LoadFromFile()) {
-			LOG_ERROR("Failed to load configuration from file.");
+			std::cout << "Failed to load configuration from file.\n";
 			return 1;
+		}
+
+		if (!g_Logger.Initialize(Config::Log.strFilePath, Config::Log.strLogLevel)) {
+			std::cout << "Failed to initialize log tools." << std::endl;
 		}
 
 		boost::asio::io_context IOContext;
 		CSocks5Server ProxyServer(IOContext, Config::Local.nPort);
 		ProxyServer.Start();
-		LOG_INFO("Local SOCKS5 proxy running on port %zu", Config::Local.nPort);
-		LOG_INFO("Configure your browser to use HTTP proxy 127.0.0.1:%zu", Config::Local.nPort);
-		LOG_INFO("Or use `curl -v --socks5 127.0.0.1:%zu https://example.com`", Config::Local.nPort);
+		LOG_INFO("Local SOCKS5 proxy running on port %u", Config::Local.nPort);
+		LOG_INFO("Configure your browser to use HTTP proxy 127.0.0.1:%u", Config::Local.nPort);
+		LOG_INFO("Or use `curl -v --socks5 127.0.0.1:%u https://example.com`", Config::Local.nPort);
 		IOContext.run();
 	}
 	catch (std::exception& e) {

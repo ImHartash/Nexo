@@ -14,6 +14,11 @@ CSocks5Session::CSocks5Session(tcp::socket ClientSocket, ssl::context& SSLContex
 }
 
 CSocks5Session::~CSocks5Session() {
+	boost::system::error_code Error;
+	m_UpstreamSocket.shutdown(Error);
+	m_UpstreamSocket.lowest_layer().close(Error);
+	m_ClientSocket.close(Error);
+
 	LOG_INFO("Session closed.");
 }
 
@@ -171,7 +176,7 @@ awaitable<void> CSocks5Session::RelayClientToUpstream() {
 		}
 	}
 
-	CloseSockets();
+	/*CloseSockets();*/
 }
 
 awaitable<void> CSocks5Session::RelayUpstreamToClient() {
@@ -195,7 +200,7 @@ awaitable<void> CSocks5Session::RelayUpstreamToClient() {
 		}
 	}
 		
-	CloseSockets();
+	/*CloseSockets();*/
 }
 
 void CSocks5Session::CloseSockets() {

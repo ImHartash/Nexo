@@ -433,5 +433,22 @@ FodyWeavers.xsd
 
 ### VisualStudio Patch ###
 # Additional files built by Visual Studio
+bin/
+build/
+out/
 
-output/
+# VS Generated
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+
+# CMake
+CMakeUserPresets.json
+CMakeCache.txt
+CMakeFiles/
+
+# Ninja
+.ninja_deps
+.ninja_log
+build.ninja
