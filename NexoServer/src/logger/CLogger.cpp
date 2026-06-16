@@ -25,6 +25,8 @@ bool CLogger::Initialize(const std::string& strFilePath, const std::string& strL
 
 	m_FileStream.open(strFilePath, std::ios::app);
 
+	m_bInitialized = true;
+
 #ifdef _WIN32
 	HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 	DWORD dwMode = 0;
@@ -32,8 +34,6 @@ bool CLogger::Initialize(const std::string& strFilePath, const std::string& strL
 	GetConsoleMode(hConsole, &dwMode);
 	dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
 	SetConsoleMode(hConsole, dwMode);
-
-	m_bInitialized = true;
 
 	SetConsoleTitleA("Nexo");
 	return true;
@@ -45,7 +45,12 @@ bool CLogger::Initialize(const std::string& strFilePath, const std::string& strL
 std::string CLogger::GetTimeStamp() {
 	time_t Now = time(nullptr);
 	tm TimeInfo;
+
+#ifdef _WIN32
 	localtime_s(&TimeInfo, &Now);
+#else
+	localtime_r(&Now, &TimeInfo);
+#endif
 
 	char Buffer[80];
 	strftime(Buffer, sizeof(Buffer), "%H:%M:%S", &TimeInfo);

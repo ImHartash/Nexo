@@ -1,10 +1,18 @@
-file(GLOB_RECURSE CLIENT_SOURCES "src/*.cpp")
+file(GLOB_RECURSE CLIENT_SOURCES CONFIGURE_DEPENDS
+    "src/*.cpp"
+)
 
-set_property(DIRECTORY PROPERTY CMAKE_CONFIGURE_DEPENDS "src")
+add_executable(nexo_client ${CLIENT_SOURCES})
 
-add_executable(NexoClient ${CLIENT_SOURCES})
+set_target_properties(nexo_client PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY_DEBUG
+        "${CMAKE_SOURCE_DIR}/bin/debug"
 
-target_include_directories(NexoClient PRIVATE
+    RUNTIME_OUTPUT_DIRECTORY_RELEASE
+        "${CMAKE_SOURCE_DIR}/bin/release"
+)
+
+target_include_directories(nexo_client PRIVATE
     src
     src/headers
     src/logger
@@ -13,18 +21,26 @@ target_include_directories(NexoClient PRIVATE
     src/sessions/socks5session
 )
 
-target_link_libraries(NexoClient PRIVATE
-    Boost::system
+target_link_libraries(nexo_client PRIVATE
+    Boost::headers
     OpenSSL::SSL
     OpenSSL::Crypto
+    tomlplusplus::tomlplusplus
+)
+
+target_compile_options(nexo_client PRIVATE
+    /EHsc
 )
 
 if(WIN32)
-    target_link_libraries(NexoClient PRIVATE ws2_32 mswsock)
+    target_link_libraries(nexo_client PRIVATE
+        ws2_32
+        mswsock
+    )
 endif()
 
-add_custom_command(TARGET NexoClient POST_BUILD
+add_custom_command(TARGET nexo_client POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
     "${CMAKE_CURRENT_SOURCE_DIR}/config/client.toml"
-    "$<TARGET_FILE_DIR:NexoClient>/client.toml"
+    "$<TARGET_FILE_DIR:nexo_client>/config/client_configuration.toml"
 )

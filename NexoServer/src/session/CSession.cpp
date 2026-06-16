@@ -104,6 +104,7 @@ awaitable<void> CSession::RelayServerToClient() {
 		for (;;) {
 			uint64_t nBufferSize = co_await m_TargetSocket.async_read_some(
 				net::buffer(arrBuffer), use_awaitable);
+			ResetTimer();
 			co_await net::async_write(m_ClientSocket,
 				net::buffer(arrBuffer.data(), nBufferSize), use_awaitable);
 		}
