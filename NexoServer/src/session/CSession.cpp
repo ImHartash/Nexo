@@ -1,14 +1,15 @@
-#include "CSession.hpp"
+﻿#include "CSession.hpp"
 #include <boost/asio/experimental/awaitable_operators.hpp>
 #include "logger/CLogger.hpp"
 #include "config/ServerConfiguration.hpp"
 
 using namespace boost::asio::experimental::awaitable_operators;
 
-CSession::CSession(tcp::socket Socket, ssl::context& SSLContext, std::atomic<int>& nActiveConnections)
+CSession::CSession(tcp::socket Socket, ssl::context& SSLContext, std::atomic<int>& nActiveConnections, 
+	const std::string& strFallbackHTML)
 	: m_ClientSocket(std::move(Socket), SSLContext), m_TargetSocket(m_ClientSocket.get_executor()),
 	m_strTargetAddress(), m_nTargetPort(0), m_Header(0), m_nActiveConnections(nActiveConnections),
-	m_TimeoutTimer(m_ClientSocket.get_executor()) { }
+	m_TimeoutTimer(m_ClientSocket.get_executor()), m_strFallbackHTML(strFallbackHTML) { }
 
 CSession::~CSession() {
 	boost::system::error_code Error;
@@ -32,15 +33,34 @@ awaitable<void> CSession::HandleSession() {
 	try {
 		// TLS Handshake
 		co_await m_ClientSocket.async_handshake(ssl::stream_base::server, use_awaitable);
-
-		// Reading and checking header
-		co_await net::async_read(m_ClientSocket,
-			net::buffer(&m_Header, sizeof(m_Header)), use_awaitable);
-		
-		if (!IsValidUUID(m_Header.nUUID)) {
-			LOG_INFO("Unauthorized connection. Reseting...");
+	}
+	catch (boost::system::system_error& e) {
+		if (e.code().value() == 167772316) {
+			LOG_INFO("Plain HTTP received, expected HTTPS. Closing.");
 			co_return;
 		}
+
+		LOG_WARN("TLS handshake failed: %s", e.what());
+		co_return;
+	}
+
+	try {
+		// Reading first bytes to check it for UUID
+		std::array<uint8_t, 16> UUIDBytes;
+		co_await net::async_read(m_ClientSocket,
+			net::buffer(UUIDBytes), use_awaitable);
+		
+		if (!IsValidUUID(UUIDBytes.data())) {
+			co_await this->HandleFallbackSession(UUIDBytes);
+			co_return;
+		}
+
+		constexpr size_t REST_SIZE = sizeof(NexoProtocolHeader_t) - 0x10;
+
+		co_await net::async_read(m_ClientSocket,
+			net::buffer(reinterpret_cast<uint8_t*>(&m_Header) + 0x10, REST_SIZE), use_awaitable);
+
+		std::memcpy(m_Header.nUUID, UUIDBytes.data(), 16);
 
 		if (m_Header.nVersion != 0x01 || m_Header.nCommand != 0x01) {
 			LOG_WARN("Invalid Nexo header (ver=%d, cmd=%d)", m_Header.nVersion, m_Header.nCommand);
@@ -72,6 +92,35 @@ awaitable<void> CSession::HandleSession() {
 	catch (std::exception& e) {
 		LOG_WARN("Session error: %s", e.what());
 	}
+}
+
+awaitable<void> CSession::HandleFallbackSession(const std::array<uint8_t, 16>& UUIDBytes) {
+	if (!Config::Fallback.bEnabled) co_return;
+	LOG_INFO("Fallback triggered - serving HTML page.");
+
+	net::streambuf RequestBuffer;
+	std::ostream RequestStream(&RequestBuffer);
+	RequestStream.write(
+		reinterpret_cast<const char*>(UUIDBytes.data()), 16);
+
+	boost::system::error_code Error;
+	co_await net::async_read_until(m_ClientSocket, RequestBuffer, "\r\n\r\n",
+		net::redirect_error(use_awaitable, Error));
+
+	std::string strResponse =
+		"HTTP/1.1 200 OK\r\n"
+		"Content-Type: text/html; charset=utf-8\r\n"
+		"Content-Length: " +
+		std::to_string(m_strFallbackHTML.size()) + "\r\n"
+		"Connection: close\r\n"
+		"Server: nginx/1.24.0\r\n"
+		"\r\n" +
+		m_strFallbackHTML;
+
+	co_await net::async_write(m_ClientSocket,
+		net::buffer(strResponse), use_awaitable);
+
+	LOG_INFO("Fallback response sent.");
 }
 
 awaitable<void> CSession::RelayClientToServer() {

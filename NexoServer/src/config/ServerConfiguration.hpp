@@ -13,8 +13,7 @@ namespace Config {
 
 	inline struct FallbackConfig_t {
 		bool bEnabled = false;
-		std::string strHostName = "example.com";
-		uint16_t nHostPort = 443;
+		std::string strHtmlFile = "fallback/index.html";
 	} Fallback;
 
 	inline struct LimitsConfig_t {

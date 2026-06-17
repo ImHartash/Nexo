@@ -14,12 +14,13 @@ using net::use_awaitable;
 
 class CSession : public std::enable_shared_from_this<CSession> {
 public:
-	CSession(tcp::socket Socket, ssl::context& SSLContext, std::atomic<int>& nActiveConnections);
+	CSession(tcp::socket Socket, ssl::context& SSLContext, std::atomic<int>& nActiveConnections, const std::string& strFallbackHTML);
 	~CSession();
 	void Start();
 
 private:
 	awaitable<void> HandleSession();
+	awaitable<void> HandleFallbackSession(const std::array<uint8_t, 16>& UUIDBytes);
 
 	awaitable<void> RelayClientToServer();
 	awaitable<void> RelayServerToClient();
@@ -40,4 +41,6 @@ private:
 
 	std::atomic<int>& m_nActiveConnections;
 	net::steady_timer m_TimeoutTimer;
+
+	const std::string& m_strFallbackHTML;
 };
