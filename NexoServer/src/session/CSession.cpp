@@ -104,7 +104,7 @@ awaitable<void> CSession::HandleFallbackSession(const std::array<uint8_t, 16>& U
 		reinterpret_cast<const char*>(UUIDBytes.data()), 16);
 
 	boost::system::error_code Error;
-	net::async_read_until(m_ClientSocket, RequestBuffer, "\r\n\r\n",
+	co_await net::async_read_until(m_ClientSocket, RequestBuffer, "\r\n\r\n",
 		net::redirect_error(use_awaitable, Error));
 
 	std::string strResponse =
