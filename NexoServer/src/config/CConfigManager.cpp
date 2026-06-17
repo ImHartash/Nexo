@@ -35,11 +35,8 @@ bool CConfigManager::LoadFromFile() {
 			if (auto enabled = fallback["enabled"].value<bool>()) {
 				Config::Fallback.bEnabled = *enabled;
 			}
-			if (auto host = fallback["host"].value<std::string>()) {
-				Config::Fallback.strHostName = *host;
-			}
-			if (auto port = fallback["port"].value<uint16_t>()) {
-				Config::Fallback.nHostPort = *port;
+			if (auto html_file = fallback["html_fallback"].value<std::string>()) {
+				Config::Fallback.strHtmlFile = *html_file;
 			}
 		}
 
@@ -114,8 +111,7 @@ key_file  = "certs/server.key"
 
 [fallback]
 enabled = false
-host    = "example.com"
-port    = 443
+html_file = "fallback/index.html"
 
 [limits]
 max_connections = 100

@@ -4,9 +4,27 @@
 #include "logger/CLogger.hpp"
 
 CServer::CServer(boost::asio::io_context& IOContext, uint16_t nPort) 
-	: m_Acceptor(IOContext, tcp::endpoint(tcp::v4(), nPort)), m_SSLContext(ssl::context::tls_server) {
+	: m_Acceptor(IOContext, tcp::endpoint(tcp::v4(), nPort)), m_SSLContext(ssl::context::tls_server),
+	m_strFallbackHTML() 
+{
 	m_SSLContext.use_certificate_chain_file(Config::Server.strCertFilePath);
 	m_SSLContext.use_private_key_file(Config::Server.strKeyFilePath, ssl::context::pem);
+
+	if (Config::Fallback.bEnabled) {
+		std::ifstream fin(Config::Fallback.strHtmlFile);
+		if (fin.is_open()) {
+			m_strFallbackHTML = std::string(
+				std::istreambuf_iterator<char>(fin),
+				std::istreambuf_iterator<char>()
+			);
+			LOG_INFO("Fallback HTML loaded (%zu bytes)", m_strFallbackHTML.size());
+		}
+		else {
+			LOG_INFO("Failed to load fallback HTML file: %s",
+				Config::Fallback.strHtmlFile.c_str());
+			m_strFallbackHTML = "<html><body><h1>Welcome</h1></body></html>";
+		}
+	}
 }
 
 CServer::~CServer() {
@@ -29,7 +47,7 @@ void CServer::AcceptConnection() {
 				else {
 					m_nActiveConnections++;
 					auto Session = std::make_shared<CSession>(
-						std::move(ClientSocket), m_SSLContext, m_nActiveConnections);
+						std::move(ClientSocket), m_SSLContext, m_nActiveConnections, m_strFallbackHTML);
 					Session->Start();
 				}
 			}

@@ -18,7 +18,14 @@ include(FetchContent)
 
 find_package(OpenSSL REQUIRED)
 find_package(Boost REQUIRED)
-find_package(tomlplusplus CONFIG REQUIRED)
+
+FetchContent_Declare(
+    tomlplusplus
+    GIT_REPOSITORY https://github.com/marzer/tomlplusplus.git
+    GIT_TAG v3.4.0
+)
+
+FetchContent_MakeAvailable(tomlplusplus)
 
 #
 # Subprojects
