@@ -30,6 +30,8 @@ private:
 	void ResetTimer();
 	awaitable<void> WaitForTimeout();
 
+	awaitable<bool> ConnectWithTimeout(tcp::socket& Socket, const tcp::resolver::results_type& Endpoints, int nTimeoutSeconds);
+
 	// Utils for session
 	bool IsValidUUID(const uint8_t* pReceivedUUID);
 

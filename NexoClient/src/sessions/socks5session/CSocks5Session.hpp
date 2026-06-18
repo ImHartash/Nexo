@@ -34,6 +34,8 @@ private:
 
 	tcp::socket m_ClientSocket;
 	ssl::stream<tcp::socket> m_UpstreamSocket;
+
+	bool m_bSocketsClosed;
 	
 	std::string m_strHostName;
 	uint16_t m_nHostPort;

@@ -9,17 +9,12 @@ using namespace boost::asio::experimental::awaitable_operators;
 
 CSocks5Session::CSocks5Session(tcp::socket ClientSocket, ssl::context& SSLContext) 
 	: m_ClientSocket(std::move(ClientSocket)), m_UpstreamSocket(m_ClientSocket.get_executor(), SSLContext),
-	m_strHostName(), m_nHostPort(0) {
+	m_bSocketsClosed(false), m_strHostName(), m_nHostPort(0) {
 	LOG_INFO("Session opened from %s", m_ClientSocket.remote_endpoint().address().to_string().c_str());
 }
 
 CSocks5Session::~CSocks5Session() {
-	boost::system::error_code Error;
-	m_UpstreamSocket.shutdown(Error);
-	m_UpstreamSocket.lowest_layer().close(Error);
-	m_ClientSocket.close(Error);
-
-	LOG_INFO("Session closed.");
+	CloseSockets();
 }
 
 void CSocks5Session::Start() {
@@ -185,7 +180,7 @@ awaitable<void> CSocks5Session::RelayClientToUpstream() {
 		}
 	}
 
-	/*CloseSockets();*/
+	CloseSockets();
 }
 
 awaitable<void> CSocks5Session::RelayUpstreamToClient() {
@@ -209,7 +204,7 @@ awaitable<void> CSocks5Session::RelayUpstreamToClient() {
 		}
 	}
 		
-	/*CloseSockets();*/
+	CloseSockets();
 }
 
 void CSocks5Session::CloseSockets() {
