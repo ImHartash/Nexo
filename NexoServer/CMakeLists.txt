@@ -28,10 +28,12 @@ target_link_libraries(nexod PRIVATE
     tomlplusplus::tomlplusplus
 )
 
-target_compile_options(nexod PRIVATE
-    /EHsc
-)
-
+if(MSVC)
+    target_compile_options(nexod PRIVATE
+        /EHsc
+    )
+endif()
+    
 if(WIN32)
     target_link_libraries(nexod PRIVATE
         ws2_32

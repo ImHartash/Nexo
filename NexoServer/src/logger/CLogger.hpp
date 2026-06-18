@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <fstream>
 #include <mutex>
+#include <cstdarg>
 
 constexpr const char* COLOR_RESET = "\033[0m";
 constexpr const char* COLOR_RED = "\033[31m";

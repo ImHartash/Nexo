@@ -39,6 +39,8 @@ private:
 	std::string m_strTargetAddress;
 	uint16_t m_nTargetPort;
 
+	bool m_bSocketsClosed;
+
 	std::atomic<int>& m_nActiveConnections;
 	net::steady_timer m_TimeoutTimer;
 
