@@ -82,8 +82,17 @@ awaitable<void> CSocks5Session::ReadSocksRequest() {
 		m_strHostName = std::string(vecDomainBuffer.begin(), vecDomainBuffer.end());
 	}
 	else if (Request.nATYP == 0x04) {
-		// not implemented.
-		throw std::runtime_error("address type not implemented");
+		std::array<uint8_t, 16> arrAddress;
+
+		co_await net::async_read(
+			m_ClientSocket,
+			net::buffer(arrAddress),
+			use_awaitable);
+		
+		net::ip::address_v6::bytes_type AddressBytes;
+		std::copy(arrAddress.begin(), arrAddress.end(), AddressBytes.begin());
+
+		m_strHostName = net::ip::address_v6(AddressBytes).to_string();
 	}
 	else {
 		throw std::runtime_error("invalid address type");
