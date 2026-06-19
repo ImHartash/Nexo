@@ -76,6 +76,7 @@ Nexo/
 ## Roadmap
 
 - [ ] Stabilise the protocol (finalize header format, versioning)
+- [ ] Add UDP support
 - [ ] TLS traffic flow imitation
 - [ ] Multithreading for the server
 - [ ] Additional transports: WebSocket, XHTTP, and others
