@@ -31,7 +31,7 @@ void CSession::CloseSockets() {
 		self->m_TargetSocket.close(err);
 		self->m_nActiveConnections--;
 		LOG_INFO("Session closed successfully.");
-		});
+	});
 }
 
 awaitable<void> CSession::HandleSession() {
