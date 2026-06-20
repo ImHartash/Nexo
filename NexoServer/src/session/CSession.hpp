@@ -18,14 +18,14 @@ public:
 	~CSession();
 	void Start();
 
+	void CloseSockets();
+
 private:
 	awaitable<void> HandleSession();
 	awaitable<void> HandleFallbackSession(const std::array<uint8_t, 16>& UUIDBytes);
 
 	awaitable<void> RelayClientToServer();
 	awaitable<void> RelayServerToClient();
-
-	void CloseSockets();
 
 	void ResetTimer();
 	awaitable<void> WaitForTimeout();

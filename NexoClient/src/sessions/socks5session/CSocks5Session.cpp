@@ -13,9 +13,7 @@ CSocks5Session::CSocks5Session(tcp::socket ClientSocket, ssl::context& SSLContex
 	LOG_INFO("Session opened from %s", m_ClientSocket.remote_endpoint().address().to_string().c_str());
 }
 
-CSocks5Session::~CSocks5Session() {
-	CloseSockets();
-}
+CSocks5Session::~CSocks5Session() { /* UNUSED */ }
 
 void CSocks5Session::Start() {
 	co_spawn(m_ClientSocket.get_executor(), [self = shared_from_this()]() -> awaitable<void> {
@@ -23,7 +21,24 @@ void CSocks5Session::Start() {
 	}, detached);
 }
 
+void CSocks5Session::CloseSockets() {
+	if (m_bSocketsClosed) return;
+	m_bSocketsClosed = true;
+
+	m_UpstreamSocket.async_shutdown([self = shared_from_this()](auto ec) {
+		boost::system::error_code err;
+		self->m_UpstreamSocket.lowest_layer().close(err);
+		self->m_ClientSocket.close(err);
+		LOG_INFO("Session closed successfully.");
+	});
+}
+
 awaitable<void> CSocks5Session::HandleSession() {
+	struct SessionGuard_t {
+		CSocks5Session* pSelf;
+		~SessionGuard_t() { pSelf->CloseSockets(); }
+	} Guard{ this };
+
 	try {
 		co_await ReadSocksAuth();
 		co_await ReadSocksRequest();
@@ -179,8 +194,6 @@ awaitable<void> CSocks5Session::RelayClientToUpstream() {
 			LOG_WARN("Client2Proxy error: %s", e.what());
 		}
 	}
-
-	CloseSockets();
 }
 
 awaitable<void> CSocks5Session::RelayUpstreamToClient() {
@@ -203,15 +216,6 @@ awaitable<void> CSocks5Session::RelayUpstreamToClient() {
 			LOG_WARN("Proxy2Client error: %s", e.what());
 		}
 	}
-		
-	CloseSockets();
-}
-
-void CSocks5Session::CloseSockets() {
-	boost::system::error_code Error;
-	m_UpstreamSocket.shutdown(Error);
-	m_UpstreamSocket.lowest_layer().close(Error);
-	m_ClientSocket.close(Error);
 }
 
 awaitable<bool> CSocks5Session::ConnectWithTimeout(tcp::socket& Socket, const tcp::resolver::results_type& Endpoints, int nTimeoutSeconds) {

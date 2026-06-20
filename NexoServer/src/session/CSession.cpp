@@ -21,7 +21,25 @@ void CSession::Start() {
 		}, detached);
 }
 
+void CSession::CloseSockets() {
+	if (m_bSocketsClosed) return;
+	this->m_bSocketsClosed = true;
+
+	m_ClientSocket.async_shutdown([self = shared_from_this()](auto ec) {
+		boost::system::error_code err;
+		self->m_ClientSocket.lowest_layer().close(err);
+		self->m_TargetSocket.close(err);
+		self->m_nActiveConnections--;
+		LOG_INFO("Session closed successfully.");
+		});
+}
+
 awaitable<void> CSession::HandleSession() {
+	struct SessionGuard_t {
+		CSession* Self;
+		~SessionGuard_t() { Self->CloseSockets(); }
+	} Guard{ this };
+
 	try {
 		// TLS Handshake
 		co_await m_ClientSocket.async_handshake(ssl::stream_base::server, use_awaitable);
@@ -140,7 +158,6 @@ awaitable<void> CSession::RelayClientToServer() {
 			e.code().value() != 1236) {
 			LOG_WARN("Client2Server relay error: %s", e.what());
 		}
-		CloseSockets();
 	}
 }
 
@@ -164,21 +181,7 @@ awaitable<void> CSession::RelayServerToClient() {
 			e.code().value() != 1236) {
 			LOG_WARN("Server2Client relay error: %s", e.what());
 		}
-		CloseSockets();
 	}
-}
-
-void CSession::CloseSockets() {
-	if (m_bSocketsClosed) return;
-
-	m_ClientSocket.async_shutdown([self = shared_from_this()](auto ec) {
-		boost::system::error_code err;
-		self->m_ClientSocket.lowest_layer().close(err);
-		self->m_TargetSocket.close(err);
-		self->m_nActiveConnections--;
-		self->m_bSocketsClosed = true;
-		LOG_INFO("Session closed successfully.");
-	});
 }
 
 void CSession::ResetTimer() {
@@ -189,7 +192,6 @@ awaitable<void> CSession::WaitForTimeout() {
 	m_TimeoutTimer.expires_after(std::chrono::seconds(Config::Limits.nTimeoutSeconds));
 	co_await m_TimeoutTimer.async_wait(use_awaitable);
 	LOG_INFO("Session timed out.");
-	CloseSockets();
 }
 
 awaitable<bool> CSession::ConnectWithTimeout(tcp::socket& Socket, const tcp::resolver::results_type& Endpoints, int nTimeoutSeconds) {

@@ -17,6 +17,8 @@ public:
 	~CSocks5Session();
 	void Start();
 
+	void CloseSockets();
+
 private:
 	awaitable<void> HandleSession();
 
@@ -26,8 +28,6 @@ private:
 
 	awaitable<void> RelayClientToUpstream();
 	awaitable<void> RelayUpstreamToClient();
-
-	void CloseSockets();
 
 	// Help funcs
 	awaitable<bool> ConnectWithTimeout(tcp::socket& Socket, const tcp::resolver::results_type& Endpoints, int nTimeoutSeconds);
