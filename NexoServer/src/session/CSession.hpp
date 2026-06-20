@@ -18,6 +18,8 @@ public:
 	~CSession();
 	void Start();
 
+	void CloseSockets();
+
 private:
 	awaitable<void> HandleSession();
 	awaitable<void> HandleFallbackSession(const std::array<uint8_t, 16>& UUIDBytes);
@@ -25,10 +27,10 @@ private:
 	awaitable<void> RelayClientToServer();
 	awaitable<void> RelayServerToClient();
 
-	void CloseSockets();
-
 	void ResetTimer();
 	awaitable<void> WaitForTimeout();
+
+	awaitable<bool> ConnectWithTimeout(tcp::socket& Socket, const tcp::resolver::results_type& Endpoints, int nTimeoutSeconds);
 
 	// Utils for session
 	bool IsValidUUID(const uint8_t* pReceivedUUID);
@@ -38,6 +40,8 @@ private:
 	NexoProtocolHeader_t m_Header;
 	std::string m_strTargetAddress;
 	uint16_t m_nTargetPort;
+
+	bool m_bSocketsClosed;
 
 	std::atomic<int>& m_nActiveConnections;
 	net::steady_timer m_TimeoutTimer;

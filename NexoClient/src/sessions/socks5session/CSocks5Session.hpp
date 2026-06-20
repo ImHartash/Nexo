@@ -17,6 +17,8 @@ public:
 	~CSocks5Session();
 	void Start();
 
+	void CloseSockets();
+
 private:
 	awaitable<void> HandleSession();
 
@@ -27,13 +29,13 @@ private:
 	awaitable<void> RelayClientToUpstream();
 	awaitable<void> RelayUpstreamToClient();
 
-	void CloseSockets();
-
 	// Help funcs
 	awaitable<bool> ConnectWithTimeout(tcp::socket& Socket, const tcp::resolver::results_type& Endpoints, int nTimeoutSeconds);
 
 	tcp::socket m_ClientSocket;
 	ssl::stream<tcp::socket> m_UpstreamSocket;
+
+	bool m_bSocketsClosed;
 	
 	std::string m_strHostName;
 	uint16_t m_nHostPort;

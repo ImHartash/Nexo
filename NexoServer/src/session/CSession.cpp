@@ -8,18 +8,10 @@ using namespace boost::asio::experimental::awaitable_operators;
 CSession::CSession(tcp::socket Socket, ssl::context& SSLContext, std::atomic<int>& nActiveConnections, 
 	const std::string& strFallbackHTML)
 	: m_ClientSocket(std::move(Socket), SSLContext), m_TargetSocket(m_ClientSocket.get_executor()),
-	m_strTargetAddress(), m_nTargetPort(0), m_Header(0), m_nActiveConnections(nActiveConnections),
+	m_strTargetAddress(), m_nTargetPort(0), m_Header{}, m_bSocketsClosed(false), m_nActiveConnections(nActiveConnections),
 	m_TimeoutTimer(m_ClientSocket.get_executor()), m_strFallbackHTML(strFallbackHTML) { }
 
-CSession::~CSession() {
-	boost::system::error_code Error;
-	m_ClientSocket.shutdown(Error);
-	m_ClientSocket.lowest_layer().close(Error);
-	m_TargetSocket.close(Error);
-	m_nActiveConnections--;
-
-	LOG_INFO("Session closed successfully.");
-}
+CSession::~CSession() {}
 
 void CSession::Start() {
 	auto Self = shared_from_this();
@@ -29,7 +21,25 @@ void CSession::Start() {
 		}, detached);
 }
 
+void CSession::CloseSockets() {
+	if (m_bSocketsClosed) return;
+	this->m_bSocketsClosed = true;
+
+	m_ClientSocket.async_shutdown([self = shared_from_this()](auto ec) {
+		boost::system::error_code err;
+		self->m_ClientSocket.lowest_layer().close(err);
+		self->m_TargetSocket.close(err);
+		self->m_nActiveConnections--;
+		LOG_INFO("Session closed successfully.");
+		});
+}
+
 awaitable<void> CSession::HandleSession() {
+	struct SessionGuard_t {
+		CSession* Self;
+		~SessionGuard_t() { Self->CloseSockets(); }
+	} Guard{ this };
+
 	try {
 		// TLS Handshake
 		co_await m_ClientSocket.async_handshake(ssl::stream_base::server, use_awaitable);
@@ -82,7 +92,12 @@ awaitable<void> CSession::HandleSession() {
 		auto Endpoints = co_await Resolver.async_resolve(
 			m_strTargetAddress, std::to_string(m_nTargetPort), use_awaitable);
 
-		co_await net::async_connect(m_TargetSocket, Endpoints, use_awaitable);
+		bool bConnected = co_await this->ConnectWithTimeout(m_TargetSocket, Endpoints, 30);
+		if (!bConnected) {
+			LOG_WARN("Failed to connect to %s:%d", m_strTargetAddress.c_str(), m_nTargetPort);
+			co_return;
+		}
+
 		LOG_INFO("Connected to target server %s:%d", m_strTargetAddress.c_str(), m_nTargetPort);
 
 		// Starting translation
@@ -143,7 +158,6 @@ awaitable<void> CSession::RelayClientToServer() {
 			e.code().value() != 1236) {
 			LOG_WARN("Client2Server relay error: %s", e.what());
 		}
-		/*CloseSockets();*/
 	}
 }
 
@@ -167,18 +181,7 @@ awaitable<void> CSession::RelayServerToClient() {
 			e.code().value() != 1236) {
 			LOG_WARN("Server2Client relay error: %s", e.what());
 		}
-		/*CloseSockets();*/
 	}
-}
-
-void CSession::CloseSockets() {
-	boost::system::error_code Error;
-	m_ClientSocket.shutdown(Error);
-	m_ClientSocket.lowest_layer().close(Error);
-	m_TargetSocket.close(Error);
-	m_nActiveConnections--;
-
-	LOG_INFO("Session closed successfully.");
 }
 
 void CSession::ResetTimer() {
@@ -189,7 +192,28 @@ awaitable<void> CSession::WaitForTimeout() {
 	m_TimeoutTimer.expires_after(std::chrono::seconds(Config::Limits.nTimeoutSeconds));
 	co_await m_TimeoutTimer.async_wait(use_awaitable);
 	LOG_INFO("Session timed out.");
-	/*CloseSockets();*/
+}
+
+awaitable<bool> CSession::ConnectWithTimeout(tcp::socket& Socket, const tcp::resolver::results_type& Endpoints, int nTimeoutSeconds) {
+	net::steady_timer Timer(co_await net::this_coro::executor);
+	Timer.expires_after(std::chrono::seconds(nTimeoutSeconds));
+
+	try {
+		auto Result = co_await(
+			net::async_connect(Socket, Endpoints, use_awaitable) || Timer.async_wait(use_awaitable));
+
+		if (Result.index() == 0) {
+			Timer.cancel();
+			co_return true;
+		}
+		else {
+			LOG_WARN("Failed to connect to the server: timeout.");
+			co_return false;
+		}
+	}
+	catch (std::exception&) {
+		co_return false;
+	}
 }
 
 bool CSession::IsValidUUID(const uint8_t* pReceivedUUID) {

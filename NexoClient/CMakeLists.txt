@@ -28,9 +28,11 @@ target_link_libraries(nexo_client PRIVATE
     tomlplusplus::tomlplusplus
 )
 
-target_compile_options(nexo_client PRIVATE
-    /EHsc
-)
+if(MSVC)
+    target_compile_options(nexo_client PRIVATE
+        /EHsc
+    )
+endif()
 
 if(WIN32)
     target_link_libraries(nexo_client PRIVATE

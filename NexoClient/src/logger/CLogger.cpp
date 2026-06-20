@@ -45,7 +45,12 @@ bool CLogger::Initialize(const std::string& strFilePath, const std::string& strL
 std::string CLogger::GetTimeStamp() {
 	time_t Now = time(nullptr);
 	tm TimeInfo;
+	
+#ifdef _WIN32
 	localtime_s(&TimeInfo, &Now);
+#else
+	localtime_r(&Now, &TimeInfo);
+#endif
 
 	char Buffer[80];
 	strftime(Buffer, sizeof(Buffer), "%H:%M:%S", &TimeInfo);
