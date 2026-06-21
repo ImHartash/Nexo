@@ -51,9 +51,6 @@ fi
 log "Creating directory structure in $INSTALL_DIR..."
 mkdir -p "$INSTALL_DIR"/{certs,fallback,logs,config}
 
-log "Creating directory structure in $INSTALL_DIR..."
-mkdir -p "$INSTALL_DIR/{certs,fallback,logs,config}"
-
 log "Copying binary and related files..."
 cp "$BINARY_PATH" "$INSTALL_DIR/nexod"
 
@@ -79,6 +76,7 @@ ExecStart=${INSTALL_DIR}/nexod
 Restart=on-failure
 RestartSec=3
 NoNewPrivileges=true
+AmbientCapabilities=CAP_NET_BIND_SERVICE
 
 [Install]
 WantedBy=multi-user.target
