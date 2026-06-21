@@ -60,11 +60,20 @@ cp "$BINARY_PATH" "$INSTALL_DIR/nexod"
 log "Setting up certificates..."
 if [ ! -f "$INSTALL_DIR/certs/server.crt" ] || [ ! -f "$INSTALL_DIR/certs/server.key" ]; then
     log "No certificates found. Generating self-signed certificate for testing..."
+
+    # Granting permission for certs (im tired do this with ai, seriously)
+    chown -R "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR/certs/"
+
     sudo -u "$SERVICE_USER" openssl req -x509 -newkey rsa:4096 \
         -keyout "$INSTALL_DIR/certs/server.key" \
         -out "$INSTALL_DIR/certs/server.crt" \
         -days 365 -nodes -batch \
         -subj "/CN=$(hostname)" 2>/dev/null
+
+    if [ ! -f "$INSTALL_DIR/certs/server.key" ] || [ ! -f "$INSTALL_DIR/certs/server.crt" ]; then
+        error "Failed to generate certificates. Check openssl installation."
+    fi
+    
     chmod 600 "$INSTALL_DIR/certs/server.key"
     chmod 644 "$INSTALL_DIR/certs/server.crt"
     log "Self-signed certificate generated."
