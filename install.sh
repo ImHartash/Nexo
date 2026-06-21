@@ -60,10 +60,10 @@ cp "$BINARY_PATH" "$INSTALL_DIR/nexod"
 log "Setting up certificates..."
 if [ ! -f "$INSTALL_DIR/certs/server.crt" ] || [ ! -f "$INSTALL_DIR/certs/server.key" ]; then
     log "No certificates found. Generating self-signed certificate for testing..."
-    sudo -u "$SERVICE_USER" openssl req -x509 -newkey rsa:2048 \
+    sudo -u "$SERVICE_USER" openssl req -x509 -newkey rsa:4096 \
         -keyout "$INSTALL_DIR/certs/server.key" \
         -out "$INSTALL_DIR/certs/server.crt" \
-        -days 365 -nodes \
+        -days 365 -nodes -batch \
         -subj "/CN=$(hostname)" 2>/dev/null
     chmod 600 "$INSTALL_DIR/certs/server.key"
     chmod 644 "$INSTALL_DIR/certs/server.crt"
