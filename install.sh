@@ -55,6 +55,7 @@ log "Copying binary and related files..."
 cp "$BINARY_PATH" "$INSTALL_DIR/nexod"
 
 [ -f "NexoServer/fallback/index.html" ] && cp -n "NexoServer/fallback/index.html" "$INSTALL_DIR/fallback/"
+[ -f "NexoServer/config/server.toml" ] && cp -n "NexoServer/config/server.toml" "$INSTALL_DIR/config/server_configuration.toml"
 [ -d "certs" ] && cp -n certs/* "$INSTALL_DIR/certs/" 2>/dev/null || true
 
 log "Setting up certificates..."
