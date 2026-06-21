@@ -57,6 +57,24 @@ cp "$BINARY_PATH" "$INSTALL_DIR/nexod"
 [ -f "NexoServer/fallback/index.html" ] && cp -n "NexoServer/fallback/index.html" "$INSTALL_DIR/fallback/"
 [ -d "certs" ] && cp -n certs/* "$INSTALL_DIR/certs/" 2>/dev/null || true
 
+log "Setting up certificates..."
+if [ ! -f "$INSTALL_DIR/certs/server.crt" ] || [ ! -f "$INSTALL_DIR/certs/server.key" ]; then
+    log "No certificates found. Generating self-signed certificate for testing..."
+    sudo -u "$SERVICE_USER" openssl req -x509 -newkey rsa:2048 \
+        -keyout "$INSTALL_DIR/certs/server.key" \
+        -out "$INSTALL_DIR/certs/server.crt" \
+        -days 365 -nodes \
+        -subj "/CN=$(hostname)" 2>/dev/null
+    chmod 600 "$INSTALL_DIR/certs/server.key"
+    chmod 644 "$INSTALL_DIR/certs/server.crt"
+    log "Self-signed certificate generated."
+else
+    log "Certificates already exist, fixing permissions..."
+    chown -R "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR/certs/"
+    chmod 600 "$INSTALL_DIR/certs/"*.key 2>/dev/null || true
+    chmod 644 "$INSTALL_DIR/certs/"*.crt 2>/dev/null || true
+fi
+
 log "Granting permission to bind privileged ports..."
 setcap 'cap_net_bind_service=+ep' "$INSTALL_DIR/nexod"
 
