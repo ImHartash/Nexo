@@ -1,0 +1,260 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background: #0a0a0a;
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+
+        .bg {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            pointer-events: none;
+            background: radial-gradient(circle at top left, #2563eb22, transparent 30%), radial-gradient(circle at bottom right, #9333ea22, transparent 30%);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+        }
+
+        .logo {
+            font-size: 40px;
+            font-weight: 800;
+            letter-spacing: -1px;
+        }
+
+        a {
+            text-decoration: none;
+            color: #ffffff;
+        }
+
+        .github {
+            border: 1px solid #222222;
+            padding: 14px 24px;
+            border-radius: 16px;
+            transition: border-color 0.2s ease;
+        }
+
+            .github:hover {
+                border-color: #444444;
+            }
+
+        .hero {
+            padding: 140px 0;
+            text-align: center;
+        }
+
+            .hero h1 {
+                font-size: 120px;
+                font-weight: 800;
+                letter-spacing: -4px;
+                line-height: 1;
+            }
+
+            .hero p {
+                max-width: 700px;
+                margin: 30px auto;
+                color: #aaaaaa;
+                line-height: 1.8;
+                font-size: 20px;
+            }
+
+        .buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 18px 30px;
+            border-radius: 18px;
+            border: 1px solid #222222;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+            .btn:hover {
+                border-color: #555555;
+                background: rgba(255, 255, 255, 0.05);
+            }
+
+        .main {
+            background: #ffffff;
+            color: #0a0a0a;
+            border-color: #ffffff;
+        }
+
+            .main:hover {
+                background: #f0f0f0;
+                border-color: #f0f0f0;
+            }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 25px;
+            margin-top: 100px;
+        }
+
+        .card {
+            background: #111111;
+            border: 1px solid #222222;
+            padding: 35px;
+            border-radius: 24px;
+            transition: border-color 0.2s ease;
+        }
+
+            .card:hover {
+                border-color: #333333;
+            }
+
+            .card h2 {
+                margin-bottom: 15px;
+                font-size: 22px;
+                font-weight: 600;
+            }
+
+            .card p {
+                color: #999999;
+                line-height: 1.7;
+            }
+
+        .code {
+            margin-top: 100px;
+            background: #111111;
+            border: 1px solid #222222;
+            padding: 40px;
+            border-radius: 24px;
+            font-family: 'Courier New', monospace;
+            color: #aaaaaa;
+            text-align: center;
+            font-size: 18px;
+            letter-spacing: 0.3px;
+            word-break: break-word;
+        }
+
+        footer {
+            text-align: center;
+            padding: 80px 0 40px;
+            color: #666666;
+            font-size: 14px;
+            letter-spacing: 0.5px;
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 72px;
+            }
+
+            .hero {
+                padding: 80px 0;
+            }
+
+            .container {
+                padding: 20px 16px;
+            }
+
+            .logo {
+                font-size: 32px;
+            }
+
+            .code {
+                font-size: 15px;
+                padding: 28px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .hero h1 {
+                font-size: 48px;
+            }
+
+            .hero p {
+                font-size: 17px;
+            }
+
+            .btn {
+                padding: 14px 22px;
+                font-size: 14px;
+            }
+
+            .card {
+                padding: 28px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="bg"></div>
+
+    <div class="container">
+
+        <header>
+            <div class="logo">Nexo</div>
+            <a class="github" href="https://github.com/ImHartash/Nexo">GitHub</a>
+        </header>
+
+        <section class="hero">
+            <h1>Nexo</h1>
+            <p>
+                Lightweight proxy protocol written in C++20 with Boost.Asio and OpenSSL.
+                Simple, fast and open source.
+            </p>
+            <div class="buttons">
+                <a class="btn main" href="https://github.com/ImHartash/Nexo">Repository</a>
+                <a class="btn" href="https://github.com/ImHartash/Nexo/releases">Releases</a>
+            </div>
+        </section>
+
+        <div class="cards">
+            <div class="card">
+                <h2>TLS Transport</h2>
+                <p>Secure transport powered by OpenSSL.</p>
+            </div>
+            <div class="card">
+                <h2>UUID Authentication</h2>
+                <p>Simple and lightweight access control.</p>
+            </div>
+            <div class="card">
+                <h2>SOCKS5 Client</h2>
+                <p>Local proxy interface with forwarding support.</p>
+            </div>
+        </div>
+
+        <div class="code">
+            Browser → SOCKS5 → NexoClient → TLS → NexoServer → Target Host
+        </div>
+
+        <footer>
+            Nexo · Open Source Project
+        </footer>
+
+    </div>
+
+</body>
+</html>
