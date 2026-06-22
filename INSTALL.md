@@ -13,29 +13,40 @@
 
 > **toml++** is fetched automatically by CMake via `FetchContent` — no manual install needed.
 
-## Bilding (Windows)
+## Installing (Linux Server)
 
-### 1. Install dependencies via vcpkg
+### 1. Clone repository
 
-```cmd
-./vcpkg install openssl boost
+Clone repository to the temp directory (ex. ~/Nexo)
+
+```sh
+git clone https://github.com/ImHartash/Nexo.git
+cd Nexo
 ```
 
-### 2. Configure
+### 2. Run bash script from root
 
-```cmd
-cmake --preset windows-release
+```sh
+sudo bash install.sh
 ```
 
-For a debug build use `windows-debug` instead. Presets are defined in `CMakePresets.json` at the project root.
+This script will automatically create the required directories and services.
 
-### 3. Build
+### 3. Configure server configuration
 
-```cmd
-cmake --build --preset build-release
+```sh
+cd /opt/nexo/
 ```
 
-Binaries are placed into `bin/release/` — two executables: `nexod` and `nexo_client`.
+Configure `config/server_configuration.toml` using any text editor (`nano`, `vim` and etc.).
+
+### 4. Run Nexo server
+
+If it successfully installed, nexo will be automatically enabled in systemctl. Check Nexo's status via `nexo status`.
+
+```sh
+nexo start
+```
 
 ---
 
