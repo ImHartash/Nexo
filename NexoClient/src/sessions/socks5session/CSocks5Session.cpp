@@ -121,6 +121,9 @@ awaitable<void> CSocks5Session::ConnectToUpstream() {
 	bool bConnected = false;
 
 	for (int nAttempt = 1; nAttempt <= Config::Connection.nRetryAttempts; nAttempt++) {
+		boost::system::error_code CloseError;
+		m_UpstreamSocket.next_layer().close(CloseError);
+
 		LOG_INFO("Trying to connect to the server. Attempt %d/%d", nAttempt, Config::Connection.nRetryAttempts);
 		bConnected = co_await this->ConnectWithTimeout(
 			m_UpstreamSocket.next_layer(), Endpoints, Config::Connection.nTimeoutSeconds);

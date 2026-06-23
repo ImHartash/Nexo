@@ -46,3 +46,9 @@ add_custom_command(TARGET nexod POST_BUILD
     "${CMAKE_CURRENT_SOURCE_DIR}/config/server.toml"
     "$<TARGET_FILE_DIR:nexod>/config/server_configuration.toml"
 )
+
+add_custom_command(TARGET nexod POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    "${CMAKE_CURRENT_SOURCE_DIR}/fallback/index.html"
+    "$<TARGET_FILE_DIR:nexod>/fallback/index.html"
+)

@@ -1,0 +1,44 @@
+#!/bin/bash
+SERVICE_NAME="nexod"
+
+case "$1" in
+    start)
+        sudo systemctl start "$SERVICE_NAME"
+        echo "Nexo started."
+        ;;
+
+    stop)
+        sudo systemctl stop "$SERVICE_NAME"
+        echo "Nexo stopped."
+        ;;
+
+    restart)
+        sudo systemctl restart "$SERVICE_NAME"
+        echo "Nexo restarted."
+        ;;
+
+    status)
+        systemctl status "$SERVICE_NAME" --no-pager
+        ;;
+
+    logs)
+        # -f means "follow" — like tail -f, shows the log in real time
+        # Ctrl+C to exit
+        journalctl -u "$SERVICE_NAME" -f --no-hostname
+        ;;
+
+    enable)
+        sudo systemctl enable "$SERVICE_NAME"
+        echo "Autostart on boot enabled."
+        ;;
+
+    disable)
+        sudo systemctl disable "$SERVICE_NAME"
+        echo "Autostart on boot disabled."
+        ;;
+
+    *)
+        echo "Usage: nexo {start|stop|restart|status|logs|enable|disable}"
+        exit 1
+        ;;
+esac
