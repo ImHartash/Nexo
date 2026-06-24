@@ -72,7 +72,12 @@ awaitable<void> CSocks5Session::ReadSocksRequest() {
 	Socks5Request_t Request;
 	co_await net::async_read(m_ClientSocket, net::buffer(&Request, sizeof(Socks5Request_t)), use_awaitable);
 	if (Request.nVersion != 0x05) throw std::runtime_error("invalid socks version");
-	if (Request.nCommand != 0x01) throw std::runtime_error("usupported socks command");
+	if (Request.nCommand != 0x01 && Request.nCommand != 0x03) throw std::runtime_error("usupported socks command");
+
+	if (Request.nCommand == 0x03) {
+		// UDP ASSOCIATE
+		throw std::runtime_error("not implemented");
+	}
 
 	if (Request.nATYP == 0x01) {
 		std::vector<uint8_t> vecAddressBytes(4);
