@@ -3,12 +3,14 @@
 #include <string>
 #include <vector>
 #include <array>
+#include "enums/transport.hpp"
 
 namespace Config {
 	inline struct ServerConfig_t {
 		uint16_t nServerPort = 443;
 		std::string strCertFilePath = "server.cert";
 		std::string strKeyFilePath = "server.key";
+		ETransportType Transport = ETransportType::INVALID;
 	} Server;
 
 	inline struct FallbackConfig_t {
@@ -20,6 +22,10 @@ namespace Config {
 		int nMaxConnections = 100;
 		int nTimeoutSeconds = 60;
 	} Limits;
+
+	inline struct WebsocketConfig_t {
+		std::string strPath = "/enter/your/path/";
+	} Websocket;
 
 	// WIP
 	inline struct LogConfig_t {

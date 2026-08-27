@@ -11,6 +11,7 @@ namespace Config {
 
 	inline struct ServerConfig_t {
 		std::string strServerHost = "example.com";
+		std::string strTransport = "tls";
 		uint16_t nPort = 443;
 		std::array<uint8_t, 16> UUID{};
 	} Server;
@@ -19,6 +20,10 @@ namespace Config {
 		bool bVerifyCert = false;
 		std::string strServerNameIndicator = "example.com";
 	} TLS;
+
+	inline struct WebSocketConfig_t {
+		std::string strWebsocketPath = "/enter/your/path/";
+	} WebSocket;
 
 	// WIP
 	inline struct LogConfig_t {

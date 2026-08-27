@@ -4,6 +4,7 @@
 #include "utils/utils.hpp"
 #include <filesystem>
 #include <toml++/toml.hpp>
+#include <boost/algorithm/string.hpp>
 
 namespace fs = std::filesystem;
 
@@ -29,6 +30,11 @@ bool CConfigManager::LoadFromFile() {
 			if (auto key = server["key_file"].value<std::string>()) {
 				Config::Server.strKeyFilePath = *key;
 			}
+			if (auto transport = server["transport"].value<std::string>()) {
+				boost::algorithm::to_lower(*transport);
+				if (*transport == "tls") { Config::Server.Transport = ETransportType::TLS; }
+				else if (*transport == "wss") { Config::Server.Transport = ETransportType::WEBSOCKET; }
+			}
 		}
 
 		if (auto fallback = TomlTable["fallback"]) {
@@ -46,6 +52,12 @@ bool CConfigManager::LoadFromFile() {
 			}
 			if (auto timeout_seconds = limits["timeout_seconds"].value<int>()) {
 				Config::Limits.nTimeoutSeconds = *timeout_seconds;
+			}
+		}
+
+		if (auto websocket = TomlTable["websocket"]) {
+			if (auto path = websocket["path"].value<std::string>()) {
+				Config::Websocket.strPath = *path;
 			}
 		}
 
@@ -108,6 +120,7 @@ void CConfigManager::CreateDefault() {
 port = 443
 cert_file = "certs/server.crt"
 key_file  = "certs/server.key"
+transport = "tls"
 
 [fallback]
 enabled = false

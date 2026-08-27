@@ -102,6 +102,7 @@ port = 6578
 [server]
 server_host = "your-domain-or-ip.com"
 server_port = 443
+transport = "tls"
 uuid = "550e8400-e29b-41d4-a716-446655440000"
 
 [tls]
