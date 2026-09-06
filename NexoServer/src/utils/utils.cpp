@@ -1,6 +1,7 @@
 #include "utils.hpp"
 #include <algorithm>
 #include "logger/CLogger.hpp"
+#include "config/ServerConfiguration.hpp"
 
 bool Utils::ParseUUID(const std::string& strUUID, std::array<uint8_t, 16>& OutBytes) {
     std::string strNormalizedUUID = strUUID;
@@ -24,4 +25,15 @@ bool Utils::ParseUUID(const std::string& strUUID, std::array<uint8_t, 16>& OutBy
     }
 
     return true;
+}
+
+std::string Utils::GetFallbackResponse(std::string& strFallbackHTML) {
+    return "HTTP/1.1 200 OK\r\n"
+        "Content-Type: text/html; charset=utf-8\r\n"
+        "Content-Length: " +
+        std::to_string(strFallbackHTML.size()) + "\r\n"
+        "Connection: close\r\n"
+        "Server: nginx/1.24.0\r\n"
+        "\r\n" +
+        strFallbackHTML;
 }

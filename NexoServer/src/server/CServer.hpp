@@ -1,4 +1,5 @@
 #pragma once
+#include "transports/ITransport.hpp"
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
 #include <atomic>
@@ -16,11 +17,13 @@ public:
 
 private:
 	void AcceptConnection();
+	std::unique_ptr<ITransport> PrepareTransport(
+		ETransportType TransportType, tcp::socket Socket);
 
 	ssl::context m_SSLContext;
 	tcp::acceptor m_Acceptor;
 	std::atomic<int> m_nActiveConnections;
 
 	// For Fallback (why do u read this?)
-	std::string m_strFallbackHTML;
+	// std::string m_strFallbackHTML;
 };

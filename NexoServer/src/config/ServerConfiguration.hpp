@@ -10,7 +10,7 @@ namespace Config {
 		uint16_t nServerPort = 443;
 		std::string strCertFilePath = "server.cert";
 		std::string strKeyFilePath = "server.key";
-		ETransportType Transport = ETransportType::INVALID;
+		ETransportType Transport = ETransportType::TYPE_INVALID;
 	} Server;
 
 	inline struct FallbackConfig_t {

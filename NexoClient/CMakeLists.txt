@@ -1,5 +1,7 @@
 file(GLOB_RECURSE CLIENT_SOURCES CONFIGURE_DEPENDS
     "src/*.cpp"
+    "src/*.hpp"
+    "src/*.h"
 )
 
 add_executable(nexo_client ${CLIENT_SOURCES})
@@ -11,12 +13,14 @@ set_target_properties(nexo_client PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY_RELEASE
         "${CMAKE_SOURCE_DIR}/bin/release"
 )
-
+ 
 target_include_directories(nexo_client PRIVATE
     src
     src/headers
     src/logger
     src/utils
+    src/config
+    src/enums
     src/servers/socks5server
     src/sessions/socks5session
 )
@@ -31,6 +35,7 @@ target_link_libraries(nexo_client PRIVATE
 if(MSVC)
     target_compile_options(nexo_client PRIVATE
         /EHsc
+        /bigobj
     )
 endif()
 

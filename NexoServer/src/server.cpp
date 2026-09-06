@@ -4,6 +4,7 @@
 #include "logger/CLogger.hpp"
 #include "config/CConfigManager.hpp"
 #include "config/ServerConfiguration.hpp"
+#include "utils/fallback/CFallbackManager.hpp"
 
 int main(int argc, char* argv[]) {
 	try {
@@ -24,6 +25,8 @@ int main(int argc, char* argv[]) {
 		if (!g_Logger.Initialize(Config::Log.strFilePath, Config::Log.strLogLevel)) {
 			std::cout << "Failed to initialize log tools.\n";
 		}
+
+		CFallbackManager::Initialize(Config::Fallback.bEnabled, Config::Fallback.strHtmlFile);
 
 		boost::asio::io_context IOContext;
 		CServer Server(IOContext, Config::Server.nServerPort);

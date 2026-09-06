@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <string>
 #include <array>
+#include "enums/transport.hpp"
 
 namespace Config {
 	inline struct LocalConfig_t {
@@ -11,7 +12,7 @@ namespace Config {
 
 	inline struct ServerConfig_t {
 		std::string strServerHost = "example.com";
-		std::string strTransport = "tls";
+		ETransportType Transport = ETransportType::TYPE_INVALID;
 		uint16_t nPort = 443;
 		std::array<uint8_t, 16> UUID{};
 	} Server;

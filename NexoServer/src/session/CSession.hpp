@@ -2,6 +2,7 @@
 #include <memory>
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
+#include "transports/ITransport.hpp"
 #include "headers/nexo.hpp"
 
 namespace net = boost::asio;
@@ -14,7 +15,8 @@ using net::use_awaitable;
 
 class CSession : public std::enable_shared_from_this<CSession> {
 public:
-	CSession(tcp::socket Socket, ssl::context& SSLContext, std::atomic<int>& nActiveConnections, const std::string& strFallbackHTML);
+	CSession(std::unique_ptr<ITransport> pTransport, net::any_io_executor Executor,
+		std::atomic<int>& nActiveConnections);
 	~CSession();
 	void Start();
 
@@ -35,7 +37,9 @@ private:
 	// Utils for session
 	bool IsValidUUID(const uint8_t* pReceivedUUID);
 
-	ssl::stream<tcp::socket> m_ClientSocket;
+	std::unique_ptr<ITransport> m_pTransport;
+	net::any_io_executor m_Executor;
+
 	tcp::socket m_TargetSocket;
 	NexoProtocolHeader_t m_Header;
 	std::string m_strTargetAddress;
@@ -45,6 +49,4 @@ private:
 
 	std::atomic<int>& m_nActiveConnections;
 	net::steady_timer m_TimeoutTimer;
-
-	const std::string& m_strFallbackHTML;
 };

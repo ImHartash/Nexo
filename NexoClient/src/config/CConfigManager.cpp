@@ -32,6 +32,9 @@ bool CConfigManager::LoadFromFile() {
 			if (auto server_host = server["server_host"].value<std::string>()) {
 				Config::Server.strServerHost = *server_host;
 			}
+			if (auto transport = server["transport"].value<std::string>()) {
+
+			}
 			if (auto server_port = server["server_port"].value<uint16_t>()) {
 				Config::Server.nPort = *server_port;
 			}

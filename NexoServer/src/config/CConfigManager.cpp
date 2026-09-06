@@ -32,8 +32,8 @@ bool CConfigManager::LoadFromFile() {
 			}
 			if (auto transport = server["transport"].value<std::string>()) {
 				boost::algorithm::to_lower(*transport);
-				if (*transport == "tls") { Config::Server.Transport = ETransportType::TLS; }
-				else if (*transport == "wss") { Config::Server.Transport = ETransportType::WEBSOCKET; }
+				if (*transport == "tls") { Config::Server.Transport = ETransportType::TYPE_TLS; }
+				else if (*transport == "wss") { Config::Server.Transport = ETransportType::TYPE_WEBSOCKET; }
 			}
 		}
 
@@ -41,7 +41,7 @@ bool CConfigManager::LoadFromFile() {
 			if (auto enabled = fallback["enabled"].value<bool>()) {
 				Config::Fallback.bEnabled = *enabled;
 			}
-			if (auto html_file = fallback["html_fallback"].value<std::string>()) {
+			if (auto html_file = fallback["html_file"].value<std::string>()) {
 				Config::Fallback.strHtmlFile = *html_file;
 			}
 		}
@@ -131,7 +131,7 @@ max_connections = 100
 timeout_seconds = 60
 
 [log]
-log_level = "info"
+level = "info"
 file = "logs/nexo.log"
 
 # Add users below. Each [[users]] block is one user.

@@ -1,5 +1,7 @@
 file(GLOB_RECURSE SERVER_SOURCES CONFIGURE_DEPENDS
     "src/*.cpp"
+    "src/*.hpp"
+    "src/*.h"
 )
 
 add_executable(nexod ${SERVER_SOURCES})
@@ -19,6 +21,8 @@ target_include_directories(nexod PRIVATE
     src/server
     src/session
     src/utils
+    src/config
+    src/transports
 )
 
 target_link_libraries(nexod PRIVATE
@@ -31,6 +35,7 @@ target_link_libraries(nexod PRIVATE
 if(MSVC)
     target_compile_options(nexod PRIVATE
         /EHsc
+        /bigobj
     )
 endif()
     
@@ -39,6 +44,8 @@ if(WIN32)
         ws2_32
         mswsock
     )
+
+    add_compile_definitions(_WIN32_WINNT=0x0A00)
 endif()
 
 add_custom_command(TARGET nexod POST_BUILD

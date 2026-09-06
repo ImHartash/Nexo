@@ -2,20 +2,23 @@
 #include <boost/asio/experimental/awaitable_operators.hpp>
 #include "logger/CLogger.hpp"
 #include "config/ServerConfiguration.hpp"
+#include "transports/tls/CTlsTransport.hpp"
+#include "transports/wss/CWebSocketTransport.hpp"
+#include "utils/fallback/CFallbackManager.hpp"
 
 using namespace boost::asio::experimental::awaitable_operators;
 
-CSession::CSession(tcp::socket Socket, ssl::context& SSLContext, std::atomic<int>& nActiveConnections, 
-	const std::string& strFallbackHTML)
-	: m_ClientSocket(std::move(Socket), SSLContext), m_TargetSocket(m_ClientSocket.get_executor()),
+CSession::CSession(std::unique_ptr<ITransport> pTransport, net::any_io_executor Executor, 
+	std::atomic<int>& nActiveConnections)
+	: m_pTransport(std::move(pTransport)), m_Executor(Executor), m_TargetSocket(m_Executor),
 	m_strTargetAddress(), m_nTargetPort(0), m_Header{}, m_bSocketsClosed(false), m_nActiveConnections(nActiveConnections),
-	m_TimeoutTimer(m_ClientSocket.get_executor()), m_strFallbackHTML(strFallbackHTML) { }
+	m_TimeoutTimer(m_Executor) { }
 
 CSession::~CSession() {}
 
 void CSession::Start() {
 	auto Self = shared_from_this();
-	co_spawn(m_ClientSocket.get_executor(),
+	co_spawn(m_Executor,
 		[this, Self]() -> awaitable<void> {
 			co_await HandleSession();
 		}, detached);
@@ -25,13 +28,21 @@ void CSession::CloseSockets() {
 	if (m_bSocketsClosed) return;
 	this->m_bSocketsClosed = true;
 
-	m_ClientSocket.async_shutdown([self = shared_from_this()](auto ec) {
+	/*m_ClientSocket.async_shutdown([self = shared_from_this()](auto ec) {
 		boost::system::error_code err;
 		self->m_ClientSocket.lowest_layer().close(err);
 		self->m_TargetSocket.close(err);
 		self->m_nActiveConnections--;
 		LOG_INFO("Session closed successfully.");
-	});
+	});*/
+
+	boost::system::error_code Error;
+
+	m_pTransport->Close();
+	m_TargetSocket.close(Error);
+	m_nActiveConnections -= 1;
+
+	LOG_INFO("Session closed successfully!");
 }
 
 awaitable<void> CSession::HandleSession() {
@@ -40,36 +51,41 @@ awaitable<void> CSession::HandleSession() {
 		~SessionGuard_t() { Self->CloseSockets(); }
 	} Guard{ this };
 
-	try {
-		// TLS Handshake
-		co_await m_ClientSocket.async_handshake(ssl::stream_base::server, use_awaitable);
-	}
-	catch (boost::system::system_error& e) {
-		if (e.code().value() == 167772316) {
-			LOG_INFO("Plain HTTP received, expected HTTPS. Closing.");
-			co_return;
-		}
+	//try {
+	//	// TLS Handshake
+	//	co_await m_ClientSocket.async_handshake(ssl::stream_base::server, use_awaitable);
+	//}
+	//catch (boost::system::system_error& e) {
+	//	if (e.code().value() == 167772316) {
+	//		LOG_INFO("Plain HTTP received, expected HTTPS. Closing.");
+	//		co_return;
+	//	}
 
-		LOG_WARN("TLS handshake failed: %s", e.what());
+	//	LOG_WARN("TLS handshake failed: %s", e.what());
+	//	co_return;
+	//}
+
+	EHandshakeResult HandshakeResult = co_await m_pTransport->Handshake();
+	
+	if (HandshakeResult == EHandshakeResult::HR_ERROR ||
+		HandshakeResult == EHandshakeResult::HR_FALLBACK) {
 		co_return;
 	}
 
 	try {
 		// Reading first bytes to check it for UUID
 		std::array<uint8_t, 16> UUIDBytes;
-		co_await net::async_read(m_ClientSocket,
-			net::buffer(UUIDBytes), use_awaitable);
+		co_await m_pTransport->ReadExact(net::buffer(UUIDBytes));
 		
 		if (!IsValidUUID(UUIDBytes.data())) {
-			co_await this->HandleFallbackSession(UUIDBytes);
+			// TODO: Make Fallback Session pls (again) (ImHartash)
+			// co_await this->HandleFallbackSession(UUIDBytes);
 			co_return;
 		}
 
 		constexpr size_t REST_SIZE = sizeof(NexoProtocolHeader_t) - 0x10;
 
-		co_await net::async_read(m_ClientSocket,
-			net::buffer(reinterpret_cast<uint8_t*>(&m_Header) + 0x10, REST_SIZE), use_awaitable);
-
+		co_await m_pTransport->ReadExact(net::buffer(reinterpret_cast<uint8_t*>(&m_Header) + 0x10, REST_SIZE));
 		std::memcpy(m_Header.nUUID, UUIDBytes.data(), 16);
 
 		if (m_Header.nVersion != 0x01 || m_Header.nCommand != 0x01) {
@@ -79,8 +95,7 @@ awaitable<void> CSession::HandleSession() {
 
 		// Getting address
 		std::vector<char> vecAddressBuffer(m_Header.nAddressSize);
-		co_await net::async_read(m_ClientSocket,
-			net::buffer(vecAddressBuffer), use_awaitable);
+		co_await m_pTransport->ReadExact(net::buffer(vecAddressBuffer));
 
 		m_strTargetAddress = std::string(vecAddressBuffer.begin(), vecAddressBuffer.end());
 		m_nTargetPort = ntohs(m_Header.nPort);
@@ -88,7 +103,7 @@ awaitable<void> CSession::HandleSession() {
 		LOG_INFO("Connecting to %s:%d", m_strTargetAddress.c_str(), m_nTargetPort);
 
 		// Connection to target server
-		tcp::resolver Resolver(m_ClientSocket.get_executor());
+		tcp::resolver Resolver(m_Executor);
 		auto Endpoints = co_await Resolver.async_resolve(
 			m_strTargetAddress, std::to_string(m_nTargetPort), use_awaitable);
 
@@ -110,43 +125,55 @@ awaitable<void> CSession::HandleSession() {
 }
 
 awaitable<void> CSession::HandleFallbackSession(const std::array<uint8_t, 16>& UUIDBytes) {
-	if (!Config::Fallback.bEnabled) co_return;
+	if (!Config::Fallback.bEnabled || Config::Server.Transport != ETransportType::TYPE_TLS) co_return;
 	LOG_INFO("Fallback triggered - serving HTML page.");
+
+	CTlsTransport* pTLS = dynamic_cast<CTlsTransport*>(m_pTransport.get());
+	if (!pTLS) {
+		LOG_WARN("Failed to fallback request: transport not supported");
+		co_return;
+	}
 
 	net::streambuf RequestBuffer;
 	std::ostream RequestStream(&RequestBuffer);
 	RequestStream.write(
 		reinterpret_cast<const char*>(UUIDBytes.data()), 16);
+	
+	co_await pTLS->ReadUntil(RequestBuffer, "\r\n\r\n");
 
-	boost::system::error_code Error;
-	co_await net::async_read_until(m_ClientSocket, RequestBuffer, "\r\n\r\n",
-		net::redirect_error(use_awaitable, Error));
+	http::request<http::string_body> Request;
+	http::request_parser<http::string_body> Parser;
 
-	std::string strResponse =
-		"HTTP/1.1 200 OK\r\n"
-		"Content-Type: text/html; charset=utf-8\r\n"
-		"Content-Length: " +
-		std::to_string(m_strFallbackHTML.size()) + "\r\n"
-		"Connection: close\r\n"
-		"Server: nginx/1.24.0\r\n"
-		"\r\n" +
-		m_strFallbackHTML;
+	boost::system::error_code ParseError;
+	Parser.put(RequestBuffer.data(), ParseError);
 
-	co_await net::async_write(m_ClientSocket,
-		net::buffer(strResponse), use_awaitable);
+	std::string strResponse;
+	if (ParseError) {
+		strResponse = CFallbackManager::BuildResponse("/404");
+	}
+	else {
+		strResponse = CFallbackManager::BuildResponse(Request.target());
+	}
+
+	/*co_await net::async_write(m_ClientSocket,
+		net::buffer(strResponse), use_awaitable);*/
+	co_await pTLS->Write(net::buffer(strResponse));
 
 	LOG_INFO("Fallback response sent.");
+
+	// c. ON REMADE (Paulus ImHartash)
 }
 
 awaitable<void> CSession::RelayClientToServer() {
 	try {
 		std::array<char, 8192> arrBuffer;
 		for (;;) {
-			uint64_t nBufferSize = co_await m_ClientSocket.async_read_some(
-				net::buffer(arrBuffer), use_awaitable);
+			/*uint64_t nBufferSize = co_await m_ClientSocket.async_read_some(
+				net::buffer(arrBuffer), use_awaitable);*/
+			size_t nBytesRead = co_await m_pTransport->ReadSome(net::buffer(arrBuffer));
 			ResetTimer();
 			co_await net::async_write(m_TargetSocket,
-				net::buffer(arrBuffer.data(), nBufferSize), use_awaitable);
+				net::buffer(arrBuffer.data(), nBytesRead), use_awaitable);
 		}
 	}
 	catch (const boost::system::system_error& e) {
@@ -165,11 +192,12 @@ awaitable<void> CSession::RelayServerToClient() {
 	try {
 		std::array<char, 8192> arrBuffer;
 		for (;;) {
-			uint64_t nBufferSize = co_await m_TargetSocket.async_read_some(
+			uint64_t nBytesRead = co_await m_TargetSocket.async_read_some(
 				net::buffer(arrBuffer), use_awaitable);
 			ResetTimer();
-			co_await net::async_write(m_ClientSocket,
-				net::buffer(arrBuffer.data(), nBufferSize), use_awaitable);
+			/*co_await net::async_write(m_ClientSocket,
+				net::buffer(arrBuffer.data(), nBufferSize), use_awaitable);*/
+			co_await m_pTransport->Write(net::buffer(arrBuffer.data(), nBytesRead));
 		}
 	}
 	catch (const boost::system::system_error& e) {
@@ -189,9 +217,19 @@ void CSession::ResetTimer() {
 }
 
 awaitable<void> CSession::WaitForTimeout() {
-	m_TimeoutTimer.expires_after(std::chrono::seconds(Config::Limits.nTimeoutSeconds));
-	co_await m_TimeoutTimer.async_wait(use_awaitable);
-	LOG_INFO("Session timed out.");
+	for (;;) {
+		m_TimeoutTimer.expires_after(
+			std::chrono::seconds(Config::Limits.nTimeoutSeconds));
+
+		boost::system::error_code Error;
+		co_await m_TimeoutTimer.async_wait(
+			net::redirect_error(use_awaitable, Error));
+
+		if (!Error) {
+			LOG_INFO("Session timed out.");
+			co_return;
+		}
+	}
 }
 
 awaitable<bool> CSession::ConnectWithTimeout(tcp::socket& Socket, const tcp::resolver::results_type& Endpoints, int nTimeoutSeconds) {
