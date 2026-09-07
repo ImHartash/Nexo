@@ -1,5 +1,4 @@
 #include "CWebSocketTransport.hpp"
-#include "utils/fallback/CFallbackManager.hpp"
 #include "logger/CLogger.hpp"
 
 CWebSocketTransport::CWebSocketTransport(
@@ -31,13 +30,13 @@ awaitable<EHandshakeResult> CWebSocketTransport::Handshake() {
 
 		if (Error) co_return EHandshakeResult::HR_ERROR;
 
-		if (Request.target() != m_strWssPath) {
+		/*if (Request.target() != m_strWssPath) {
 			std::string strResponse = CFallbackManager::BuildResponse(std::string(Request.target()));
 
 			co_await net::async_write(m_WssSocket.next_layer(),
 				net::buffer(strResponse), net::redirect_error(net::use_awaitable, Error));
 			co_return EHandshakeResult::HR_FALLBACK;
-		}
+		}*/
 
 		co_await m_WssSocket.async_accept(Request,
 			net::redirect_error(net::use_awaitable, Error));

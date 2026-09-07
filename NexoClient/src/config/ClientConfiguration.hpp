@@ -12,8 +12,8 @@ namespace Config {
 
 	inline struct ServerConfig_t {
 		std::string strServerHost = "example.com";
-		ETransportType Transport = ETransportType::TYPE_INVALID;
 		uint16_t nPort = 443;
+		ETransportType Transport = ETransportType::TYPE_INVALID;
 		std::array<uint8_t, 16> UUID{};
 	} Server;
 
@@ -23,8 +23,8 @@ namespace Config {
 	} TLS;
 
 	inline struct WebSocketConfig_t {
-		std::string strWebsocketPath = "/enter/your/path/";
-	} WebSocket;
+		std::string strPath = "/enter/your/path/";
+	} Websocket;
 
 	// WIP
 	inline struct LogConfig_t {

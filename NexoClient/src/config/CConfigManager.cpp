@@ -1,6 +1,7 @@
 #include "CConfigManager.hpp"
 #include <filesystem>
 #include <toml++/toml.hpp>
+#include <boost/algorithm/string.hpp>
 #include "ClientConfiguration.hpp"
 #include "logger/CLogger.hpp"
 #include "utils/utils.hpp"
@@ -32,11 +33,13 @@ bool CConfigManager::LoadFromFile() {
 			if (auto server_host = server["server_host"].value<std::string>()) {
 				Config::Server.strServerHost = *server_host;
 			}
-			if (auto transport = server["transport"].value<std::string>()) {
-
-			}
 			if (auto server_port = server["server_port"].value<uint16_t>()) {
 				Config::Server.nPort = *server_port;
+			}
+			if (auto transport = server["transport"].value<std::string>()) {
+				boost::algorithm::to_lower(*transport);
+				if (*transport == "tls") { Config::Server.Transport = ETransportType::TYPE_TLS; }
+				else if (*transport == "wss") { Config::Server.Transport = ETransportType::TYPE_WEBSOCKET; }
 			}
 			if (auto uuid = server["uuid"].value<std::string>()) {
 				if (!Utils::ParseUUID(*uuid, Config::Server.UUID)) {
@@ -51,6 +54,12 @@ bool CConfigManager::LoadFromFile() {
 			}
 			if (auto tls_sni = tls["tls_sni"].value<std::string>()) {
 				Config::TLS.strServerNameIndicator = *tls_sni;
+			}
+		}
+
+		if (auto websocket = TomlTable["websocket"]) {
+			if (auto path = websocket["path"].value<std::string>()) {
+				Config::Websocket.strPath = *path;
 			}
 		}
 

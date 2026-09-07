@@ -31,7 +31,7 @@ awaitable<EHandshakeResult> CWebSocketTransport::Handshake() {
 
 		if (Error) co_return EHandshakeResult::HR_ERROR;
 
-		if (Request.target() != m_strWssPath) {
+		if (Request.target() != m_strWssPath || !ws::is_upgrade(Request)) {
 			std::string strResponse = CFallbackManager::BuildResponse(std::string(Request.target()));
 
 			co_await net::async_write(m_WssSocket.next_layer(),
@@ -41,6 +41,8 @@ awaitable<EHandshakeResult> CWebSocketTransport::Handshake() {
 
 		co_await m_WssSocket.async_accept(Request,
 			net::redirect_error(net::use_awaitable, Error));
+
+		if (Error) co_return EHandshakeResult::HR_ERROR;
 	}
 	else if (m_TransportSide == ETransportSide::SIDE_CLIENT) {
 		co_await m_WssSocket.async_handshake(m_strWssHost, m_strWssPath,
